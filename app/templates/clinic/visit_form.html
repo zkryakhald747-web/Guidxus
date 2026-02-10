@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+{% block breadcrumb %}العيادة الطبية › تسجيل حالة جديدة{% endblock %}
+{% block content %}
+{% set F = form_vals or {} %}
+
+<div class="card">
+
+  <div class="card-head"><span class="card-icon">➕</span><h3>تسجيل حالة</h3></div>
+
+  {% if msg == 'profile_saved' %}<div class="alert alert-success">تم حفظ الملف الطبي، يمكنك متابعة تسجيل الحالة.</div>{% endif %}
+  {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+  {% if patient_card %}
+  <div class="patient-card">
+    <div class="pc-head">
+      <span class="pc-icon">🗂️</span>
+      <h3>بيانات المراجع</h3>
+    </div>
+    <div class="pc-grid">
+      <div><span>الاسم</span><strong>{{ patient_card.full_name }}</strong></div>
+      {% if patient_card.trainee_no %}<div><span>الرقم التدريبي</span><strong>{{ patient_card.trainee_no }}</strong></div>{% endif %}
+      {% if patient_card.employee_no %}<div><span>الرقم الوظيفي</span><strong>{{ patient_card.employee_no }}</strong></div>{% endif %}
+      <div><span>الجوال</span><strong>{{ patient_card.mobile or '—' }}</strong></div>
+      {% if patient_card.major %}<div><span>التخصص</span><strong>{{ patient_card.major }}</strong></div>{% endif %}
+      {% if patient_card.college %}<div><span>الكلية</span><strong>{{ patient_card.college }}</strong></div>{% endif %}
+      <div>
+        <span>تاريخ الميلاد / العمر</span>
+        <strong id="birthAgeDisplay">
+          {{ patient_card.birth_date or '—' }}
+          {% if patient_card.birth_date and patient_card.age is not none %} ({{ patient_card.age }} سنة){% endif %}
+        </strong>
+      </div>
+    </div>
+  </div>
+  {% else %}
+    <div class="alert alert-danger">لم يتم تحديد المراجع. ارجع واحفظ الملف الطبي أولًا.</div>
+  {% endif %}
+
+  <form class="form" method="post" action="/clinic/visits/create" id="visitForm" autocomplete="off" novalidate>
+    <input type="hidden" name="patient_key" value="{{ patient_card.patient_key if patient_card }}">
+
+    {% if not patient_card.birth_date %}
+    <h4 class="muted section-title">البيانات الأساسية</h4>
+    <div class="grid-basic align-end">
+      <label class="field">
+        <span class="lbl">العمر (سنوات) <i class="req" aria-hidden="true">*</i></span>
+        <input type="number" name="age_years" id="ageYears" min="0" max="120" placeholder="مثال: 20" value="{{ F.get('age_years','') }}" required>
+      </label>
+    </div>
+    {% endif %}
+
+
+{% set _cv = F.get('chronic', []) %}
+{% set chronic_vals = _cv %}
+<fieldset class="form-group" style="margin-top:10px" dir="rtl">
+  <legend style="font-weight:800; margin-bottom:6px">الأمراض المزمنة</legend>
+
+  <div class="chronic-row">
+    <label class="chk">
+      <input type="checkbox" name="chronic" value="ضغط" {% if 'ضغط' in chronic_vals %}checked{% endif %}> ضغط
+    </label>
+    <label class="chk">
+      <input type="checkbox" name="chronic" value="سكر" {% if 'سكر' in chronic_vals %}checked{% endif %}> سكر
+    </label>
+    <label class="chk">
+      <input type="checkbox" name="chronic" value="ربو" {% if 'ربو' in chronic_vals %}checked{% endif %}> ربو
+    </label>
+    <label class="chk">
+      <input type="checkbox" name="chronic" value="صرع" {% if 'صرع' in chronic_vals %}checked{% endif %}> صرع
+    </label>
+
+    <label class="chk">
+      <input id="chronic_other_ck" type="checkbox" name="chronic" value="أخرى"
+             {% if 'أخرى' in chronic_vals or 'اخرى' in chronic_vals %}checked{% endif %}>
+      أخرى
+    </label>
+
+    <input id="chronic_other_in" type="text" name="chronic_other"
+           placeholder="اذكر المرض المزمن"
+           value="{{ F.get('chronic_other','') }}"
+           class="chronic-other-input">
+
+    <small class="muted">إذا اخترت “أخرى” فالحقل إجباري.</small>
+  </div>
+</fieldset>
+
+<fieldset class="form-group" style="margin-top:10px" dir="rtl">
+  <legend style="font-weight:800; margin-bottom:6px">العلامات الحيوية</legend>
+
+  
+  <div class="grid-4 align-end">
+    <label class="field">
+      <span class="lbl">الحرارة (°C): <i class="req" aria-hidden="true">*</i></span>
+      <input type="number" step="0.1" min="34" max="42" name="temp" id="tempC" placeholder="37.0" value="{{ F.get('temp','') }}" required>
+    </label>
+
+    <label class="field">
+      <span class="lbl">الضغط:</span>
+      <input type="text" name="bp" placeholder="120/80" value="{{ F.get('bp','') }}">
+    </label>
+
+    <label class="field">
+      <span class="lbl">النبض (bpm):</span>
+      <input type="number" min="30" max="200" name="pulse" placeholder="75" value="{{ F.get('pulse','') }}">
+    </label>
+
+    <label class="field">
+      <span class="lbl">التنفس (rpm):</span>
+      <input type="number" min="5" max="40" name="resp" placeholder="16" value="{{ F.get('resp','') }}">
+    </label>
+  </div>
+
+<div class="grid-5 align-end" style="margin-top:10px">
+  <label class="field">
+    <span class="lbl">نسبة السكر  (mg/dL):</span>
+    <input type="number" step="0.1" min="0" name="glucose_mg" value="{{ F.get('glucose_mg','') }}">
+  </label>
+
+  <label class="field">
+    <span class="lbl">O₂ (%):</span>
+    <input type="number" step="0.1" min="0" max="100" name="o2_sat" value="{{ F.get('o2_sat','') }}">
+  </label>
+
+  <label class="field">
+    <span class="lbl">الوزن (كجم):</span>
+    <input type="number" step="0.1" min="1" max="500" name="weight_kg" id="weightKg" placeholder="مثال: 70" value="{{ F.get('weight_kg','') }}">
+  </label>
+
+  <label class="field">
+    <span class="lbl">الطول (سم):</span>
+    <input type="number" step="0.1" min="30" max="300" name="height_cm" id="heightCm" placeholder="مثال: 170" value="{{ F.get('height_cm','') }}">
+  </label>
+
+  
+  <label class="field">
+    <span class="lbl">BMI:</span>
+    <div class="bmi-box" id="bmiBox" aria-live="polite"></div>
+  </label>
+</div>
+</fieldset>
+
+<fieldset class="form-group" style="margin-top:10px" dir="rtl">
+  <legend style="font-weight:800; margin-bottom:6px">الشكوى و التشخيص</legend>
+    <div class="grid-3 align-end">
+      <label class="field">
+        <span class="lbl">الشكوى و مدتها <i class="req" aria-hidden="true">*</i></span>
+        <textarea name="complaint" id="complaint" rows="2" placeholder="نص الشكوى..." required>{{ F.get('complaint','') }}</textarea>
+      </label>
+      <label class="field">
+        <span class="lbl">التشخيص <i class="req" aria-hidden="true">*</i></span>
+        <textarea name="diagnosis" id="diagnosis" rows="2" placeholder="نص التشخيص..." required>{{ F.get('diagnosis','') }}</textarea>
+      </label>
+      <label class="field">
+        <span class="lbl">
+			العلاج المعطى
+			<small class="muted">— يجب تعبئته عند اختيار "إحالة طبية"</small>
+		</span>
+        <textarea name="notes" id="treatmentNotes" rows="2"
+		          placeholder="ملاحظات إضافية...">{{ F.get('notes','') }}</textarea>
+      </label>
+    </div>
+</fieldset>
+
+<fieldset class="form-group" style="margin-top:10px" dir="rtl">
+  <legend style="font-weight:800; margin-bottom:6px">التوصية والإجراءات</legend>
+    <div class="grid-3 align-end">
+      {% set rec = F.get('recommendation','none') %}
+      <label class="field">
+        <span class="lbl">نوع التوصية</span>
+        <select name="recommendation" id="recType" onchange="toggleRecFields()">
+          <option value="none"    {% if rec == 'none' %}selected{% endif %}>لا يوجد</option>
+          <option value="rest"    {% if rec == 'rest' %}selected{% endif %}>راحة</option>
+          <option value="referral"{% if rec == 'referral' %}selected{% endif %}>إحالة طبية</option>
+        </select>
+      </label>
+
+      <label class="field" id="refToWrap" style="display:none">
+        <span class="lbl">جهة الإحالة (مستشفى/عيادة)</span>
+        <input type="text" name="rec_to" id="recTo" placeholder="مثال: مستشفى الملك خالد" value="{{ F.get('rec_to','') }}">
+      </label>
+
+      <label class="field" id="refSummaryWrap" style="display:none">
+        <span class="lbl">وصف الحالة/سبب الإحالة</span>
+        <input type="text" name="rec_summary" id="recSummary" placeholder="مثال: آلام صدرية متكررة بحاجة لتقييم قلبي" value="{{ F.get('rec_summary','') }}">
+      </label>
+
+      <label class="field" id="restDaysWrap" style="display:none">
+        <span class="lbl">عدد أيام الراحة</span>
+        <input type="number" name="rest_days" id="restDays" min="1" max="30" value="{{ F.get('rest_days','') }}">
+      </label>
+    </div>
+</fieldset>
+
+<fieldset class="form-group" style="margin-top:10px" dir="rtl">
+  <legend style="font-weight:800; margin-bottom:6px">الوصفة الطبية</legend>
+    <div class="card" style="background:#f9fafb;border-color:#eef2f7">
+      <div class="rx-search align-end">
+        <label class="field" style="position:relative;margin:0">
+          <span class="lbl">اختر دواء من القائمة أو ابحث عن دواء</span>
+          <select id="drugSelect" style="padding:8px 10px; border:1px solid #e6e6e6; border-radius:10px; font-family:inherit; margin-bottom:6px;">
+            <option value="">-- اختر دواء --</option>
+          </select>
+          <input type="text" id="drugSearch" placeholder="أو اكتب للبحث...">
+          <ul id="drugSuggest" class="suggest"></ul>
+        </label>
+        <button class="btn btn-secondary" type="button" onclick="addFromSelect()" style="margin:0">➕ إضافة</button>
+      </div>
+
+      <div style="margin-top:10px">
+        <table style="width:100%;border-collapse:separate;border-spacing:0 6px">
+          <thead>
+            <tr class="muted">
+              <th style="text-align:right">الدواء</th>
+              <th style="text-align:right;width:120px">الكمية</th>
+              <th style="text-align:right">ملاحظات الاستخدام</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody id="rxTable"></tbody>
+        </table>
+      </div>
+      <input type="hidden" name="rx_json" id="rxJson" value="{{ F.get('rx_json','') }}">
+    </div>
+</fieldset>
+
+    <div class="actions" style="margin-top:12px">
+      <button class="btn btn-primary" type="submit">حفظ</button>
+      <a class="btn" href="/clinic/">إلغاء</a>
+    </div>
+  </form>
+</div>
+
+<style>
+  /* ===== بطاقة المراجع ===== */
+  .patient-card{ margin-bottom:12px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px }
+  .patient-card .pc-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px }
+  .patient-card .pc-icon{ font-size:18px }
+  .patient-card .pc-grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px 16px }
+  .patient-card .pc-grid span{ display:block; color:#6b7280; font-size:.85rem }
+  .patient-card .pc-grid strong{ display:block; color:#111827 }
+  @media (max-width:700px){ .patient-card .pc-grid{ grid-template-columns: 1fr } }
+
+  /* ===== عناوين أقسام ===== */
+  .section-title{ margin:14px 0 8px }
+
+  /* ===== حقول فورم موحّدة ===== */
+  .field{ display:flex; flex-direction:column; gap:6px; color:#0f172a; font-weight:600 } /* يجعل نص التسمية بنفس ستايل .lbl */
+  .lbl{ display:inline-flex; align-items:center; gap:6px; font-weight:600; color:#0f172a }
+  .req{ color:#ef4444; font-style:normal; font-weight:700; line-height:1 }
+
+  /* إعادة نمط عناصر الإدخال حتى لا تتأثر بوزن الخط في .field */
+  .field input,
+  .field textarea,
+  .field select{
+    font-weight:400;
+    color:#111827;
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:10px;
+    padding:10px 12px;
+    outline:0;
+  }
+  .field textarea{ resize:vertical; min-height:42px }
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus{ border-color:#c9d4e0; box-shadow:0 0 0 3px rgba(18,164,180,.12) }
+
+/* ===== شبكات التخطيط ===== */
+.align-end{ align-items:end }
+.grid-basic{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px 16px }
+.grid-3{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px 16px }
+.grid-4{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px 16px }
+.grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px 16px }
+.grid-2{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px 16px }
+
+/* شبكة بخمسة أعمدة (سكر + O2 + وزن + طول + BMI) */
+.grid-5{ display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:12px 16px }
+
+/* تجاوب */
+@media (max-width:1100px){
+  .grid-4{ grid-template-columns: repeat(2, minmax(0,1fr)) }
+  .grid-5{ grid-template-columns: repeat(3, minmax(0,1fr)) }
+}
+@media (max-width:700px){
+  .grid-2, .grid-3, .grid-4, .grid-5, .grid-basic, .grid{ grid-template-columns: 1fr }
+}
+
+
+  /* ===== سطر الأمراض المزمنة (single row) ===== */
+  .chronic-row{
+    display:flex; align-items:center; gap:12px;
+    white-space:nowrap; overflow-x:auto; padding-bottom:2px;
+  }
+  .chronic-row .chk{ display:inline-flex; align-items:center; gap:6px; margin:0 }
+  .chronic-other-input{ min-width:220px }
+
+  /* ===== مربع BMI ===== */
+.bmi-box{
+  padding:10px 12px;
+  border-radius:10px;
+  background:#f3f4f6;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  border:1px solid #e5e7eb;  /* مثل باقي الـ input */
+  color:#111827;
+}
+
+  /* ===== بحث الأدوية & الاقتراحات ===== */
+  .rx-search{ display:grid; grid-template-columns: 1fr auto; gap:12px }
+  #drugSearch { width:100% }
+  .suggest{
+    position:absolute; right:0; left:0; top:100%; z-index:10; list-style:none; margin:4px 0 0; padding:0;
+    background:#fff; border:1px solid #e5e7eb; border-radius:8px; max-height:220px; overflow:auto; display:none
+  }
+  .suggest li{ padding:8px 10px; cursor:pointer }
+  .suggest li:hover{ background:#f3f4f6 }
+</style>
+
+<script>
+  // ===== توصية تكيّفية =====
+  function toggleRecFields() {
+    var v = document.getElementById('recType').value;
+    document.getElementById('restDaysWrap').style.display   = (v === 'rest')     ? 'block' : 'none';
+    document.getElementById('refToWrap').style.display      = (v === 'referral') ? 'block' : 'none';
+    document.getElementById('refSummaryWrap').style.display = (v === 'referral') ? 'block' : 'none';
+    if (v !== 'rest')     document.getElementById('restDays').value = '';
+    if (v !== 'referral'){ document.getElementById('recTo').value=''; document.getElementById('recSummary').value=''; }
+
+    // === إلزام "العلاج المعطى" عند الإحالة الطبية ===
+    var tn = document.getElementById('treatmentNotes') || document.querySelector('textarea[name="notes"]');
+    if (tn){
+      if (v === 'referral'){
+        tn.setAttribute('required','required');
+        tn.placeholder = 'مطلوب عند الإحالة الطبية...';
+      } else {
+        tn.removeAttribute('required');
+        tn.placeholder = 'ملاحظات إضافية...';
+      }
+    }
+  }
+  toggleRecFields();
+
+  // ===== تفعيل/تعطيل حقل "أخرى" في الأمراض المزمنة =====
+  (function(){
+    var ck = document.getElementById('chronic_other_ck');
+    var inp = document.getElementById('chronic_other_in');
+    function sync(){
+      if (!ck || !inp) return;
+      inp.disabled = !ck.checked;
+      inp.required = ck.checked;
+      if (!ck.checked && !inp.value) { inp.value = ''; }
+    }
+    if (ck) { ck.addEventListener('change', sync); }
+    sync();
+  })();
+
+  // ===== BMI حيّ =====
+  const w = document.getElementById('weightKg');
+  const h = document.getElementById('heightCm');
+  const bmiBox = document.getElementById('bmiBox');
+  function updBMI(){
+    const W = parseFloat((w&&w.value)||'');
+    const H = parseFloat((h&&h.value)||'');
+    if(!W || !H){ bmiBox.textContent = ''; return; }
+    const m = H/100.0;
+    if(m<=0){ bmiBox.textContent=''; return; }
+    const bmi = (W/(m*m));
+    bmiBox.textContent = 'BMI (تقريبي): ' + (Math.round(bmi*10)/10);
+  }
+  if(w) w.addEventListener('input', updBMI);
+  if(h) h.addEventListener('input', updBMI);
+  updBMI(); // لو كانت قيم محمّلة مسبقًا
+
+  // ===== تحقّق واجهة بسيط قبل الإرسال =====
+  document.getElementById('visitForm').addEventListener('submit', function(e){
+    e.preventDefault(); // منع الإرسال العادي
+    
+    const temp = document.getElementById('tempC');
+    const comp = document.getElementById('complaint');
+    const diag = document.getElementById('diagnosis');
+    {% if not patient_card.birth_date %}
+      const age = document.getElementById('ageYears');
+      if(!age.value){ alert('الرجاء إدخال العمر (سنوات).'); return; }
+    {% endif %}
+    if(!temp.value){ alert('الرجاء إدخال درجة الحرارة.'); return; }
+    if(!comp.value.trim()){ alert('الرجاء إدخال المشكلة/الشكوى.'); return; }
+    if(!diag.value.trim()){ alert('الرجاء إدخال التشخيص.'); return; }
+
+    // === جديد: العلاج المعطى إلزامي عند الإحالة الطبية ===
+    const recType = document.getElementById('recType').value;
+    const treat = document.getElementById('treatmentNotes') || document.querySelector('textarea[name="notes"]');
+    if (recType === 'referral' && (!treat || !treat.value.trim())){
+      alert('عند اختيار إحالة طبية، يجب تعبئة حقل "العلاج المعطى".');
+      return;
+    }
+
+    // تحضير البيانات للإرسال
+    const formData = new FormData(this);
+    
+    // إرسال البيانات عبر AJAX
+    console.log('Submitting form...');
+    fetch('/clinic/visits/create', {
+      method: 'POST',
+      body: formData
+    })
+    .then(r => {
+      console.log('Response status:', r.status);
+      console.log('Response headers:', r.headers.get('content-type'));
+      return r.json();
+    })
+    .then(data => {
+      console.log('Response data:', data);
+      if (!data.success) {
+        alert('خطأ: ' + (data.error || 'فشل حفظ الزيارة'));
+        return;
+      }
+      
+      // الزيارة تم حفظها بنجاح
+      alert('تم حفظ الزيارة بنجاح');
+      
+      console.log('Visit ID:', data.visit_id, 'Recommendation:', data.recommendation);
+      
+      // إذا كانت هناك إحالة أو راحة، افتح الطباعة تلقائياً
+      if (data.recommendation === 'rest' && data.visit_id) {
+        // طباعة إشعار الراحة
+        console.log('Opening rest notice for visit:', data.visit_id);
+        window.open('/clinic/reports/rest_notice/by_visit?visit_id=' + data.visit_id, '_blank');
+      } else if (data.recommendation === 'referral' && data.visit_id) {
+        // طباعة الإحالة الطبية
+        console.log('Opening referral notice for visit:', data.visit_id);
+        window.open('/clinic/reports/referral_notice/by_visit?visit_id=' + data.visit_id, '_blank');
+      } else {
+        // لا توجد إحالة ولا راحة، أغلق الصفحة أو ارجع
+        console.log('No recommendation, redirecting...');
+        setTimeout(() => {
+          window.location.href = '/clinic/?msg=visit_saved';
+        }, 500);
+      }
+    })
+    .catch(err => {
+      console.error('Request error:', err);
+      alert('خطأ في الاتصال: ' + err.message);
+    });
+  });
+
+  // ===== صرف الدواء: Autocomplete + Dropdown =====
+  const drugInput = document.getElementById('drugSearch');
+  const drugSelect = document.getElementById('drugSelect');
+  const suggest   = document.getElementById('drugSuggest');
+  const tableBody = document.getElementById('rxTable');
+  const rxJson    = document.getElementById('rxJson');
+  const rxMap     = new Map(); // id -> {label, qty, note}
+
+  // تحميل الأدوية وملء الـ dropdown
+  function loadAllDrugs(){
+    fetch('/clinic/pharmacy/drugs/search?q=')
+      .then(r=>r.json())
+      .then(data=>{
+        const items = (data && data.items) || [];
+        if (items.length) {
+          // ملء الـ dropdown
+          items.forEach(it => {
+            const opt = document.createElement('option');
+            opt.value = it.id;
+            opt.textContent = it.label;
+            drugSelect.appendChild(opt);
+          });
+        } else {
+          console.warn('No drugs found');
+        }
+      })
+      .catch(e=>console.error('Failed to load drugs:', e));
+  }
+
+  // تحميل الأدوية عند تحميل الصفحة
+  document.addEventListener('DOMContentLoaded', loadAllDrugs);
+
+  let debounceT = null;
+  if (drugInput){
+    drugInput.addEventListener('input', function(){
+      const q = this.value.trim();
+      clearTimeout(debounceT);
+      if (!q){ suggest.style.display='none'; suggest.innerHTML=''; return; }
+      debounceT = setTimeout(()=> searchDrugs(q), 220);
+    });
+  }
+
+  function searchDrugs(q){
+    fetch(`/clinic/pharmacy/drugs/search?q=${encodeURIComponent(q)}`)
+      .then(r=>r.json())
+      .then(data=>{
+        const items = (data && data.items) || [];
+        if (!items.length){ suggest.style.display='none'; suggest.innerHTML=''; return; }
+        suggest.innerHTML = items.map(it => `<li data-id="${it.id}" data-label="${escapeHtml(it.label)}">${escapeHtml(it.label)}</li>`).join('');
+        suggest.style.display = 'block';
+      })
+      .catch(()=>{ suggest.style.display='none'; });
+  }
+
+  suggest.addEventListener('click', function(e){
+    const li = e.target.closest('li');
+    if (!li) return;
+    const id = parseInt(li.getAttribute('data-id'), 10);
+    const label = li.getAttribute('data-label');
+    drugInput.value = label;
+    suggest.style.display='none';
+    addDrug(id, label);
+  });
+
+  document.addEventListener('click', function(e){
+    if (!suggest.contains(e.target) && e.target !== drugInput) suggest.style.display='none';
+  });
+
+  function addFromSelect(){
+    const selectedId = parseInt(drugSelect.value, 10);
+    const selectedOption = drugSelect.options[drugSelect.selectedIndex];
+    if (!selectedId || selectedId <= 0){ alert('اختر دواءً من القائمة.'); return; }
+    const label = selectedOption.textContent;
+    addDrug(selectedId, label);
+    drugSelect.value = ''; // إعادة تعيين الـ dropdown
+  }
+
+  function addFromInput(){
+    const li = suggest.querySelector('li');
+    if (!li){ alert('اختر دواءً من قائمة الاقتراحات.'); return; }
+    const id = parseInt(li.getAttribute('data-id'),10);
+    const label = li.getAttribute('data-label');
+    addDrug(id, label);
+  }
+
+  function addDrug(id, label){
+    if (rxMap.has(id)) return;
+    rxMap.set(id, {label: label, qty: 1, note: ''});
+    drugInput.value = '';
+    redraw();
+  }
+
+  function redraw(){
+    let rows = '';
+    rxMap.forEach((v, id)=>{
+      rows += `
+      <tr style="background:#fff;border:1px solid #eee">
+        <td style="padding:8px 10px">${escapeHtml(v.label)}</td>
+        <td style="padding:8px 10px"><input type="number" min="1" max="999" value="${v.qty}" style="width:100%" oninput="updQty(${id}, this.value)"></td>
+        <td style="padding:8px 10px"><input type="text" value="${escapeHtml(v.note||'')}" placeholder="تعليمات الاستخدام..." style="width:100%" oninput="updNote(${id}, this.value)"></td>
+        <td style="padding:8px 10px;text-align:center"><button class="btn" type="button" onclick="delDrug(${id})">❌</button></td>
+      </tr>`;
+    });
+    tableBody.innerHTML = rows;
+    syncHidden();
+  }
+
+  function updQty(id, v){ const n=parseInt(v,10); if(!n||n<1)return; const o=rxMap.get(id); if(!o)return; o.qty=n; syncHidden(); }
+  function updNote(id, v){ const o=rxMap.get(id); if(!o)return; o.note=v; syncHidden(); }
+  function delDrug(id){ rxMap.delete(id); redraw(); }
+
+  function syncHidden(){
+    const arr=[]; rxMap.forEach((v,id)=>arr.push({drug_id:id, label:v.label, qty:v.qty, note:v.note}));
+    rxJson.value = arr.length ? JSON.stringify(arr) : '';
+  }
+
+  // ===== إعادة تعبئة الوصفة من rx_json إن وُجدت بعد خطأ =====
+  try{
+    const pre = rxJson.value && JSON.parse(rxJson.value);
+    if (Array.isArray(pre)){
+      pre.forEach(it=>{
+        if(!it || rxMap.has(it.drug_id)) return;
+        rxMap.set(parseInt(it.drug_id,10), {label: it.label || ('#'+it.drug_id), qty: parseInt(it.qty||1,10), note: it.note || ''});
+      });
+      redraw();
+    }
+  }catch(_){}
+
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // ===== حساب العمر من تاريخ الميلاد =====
+  function calculateAge(birthDateStr) {
+    if (!birthDateStr) return null;
+    
+    // محاولة تحليل التاريخ (YYYY-MM-DD أو DD/MM/YYYY)
+    let birthDate;
+    if (birthDateStr.includes('-')) {
+      // YYYY-MM-DD
+      birthDate = new Date(birthDateStr);
+    } else if (birthDateStr.includes('/')) {
+      // DD/MM/YYYY
+      const parts = birthDateStr.split('/');
+      if (parts.length === 3) {
+        birthDate = new Date(parts[2], parts[1]-1, parts[0]);
+      }
+    } else {
+      return null;
+    }
+    
+    if (isNaN(birthDate)) return null;
+    
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : null;
+  }
+
+  // تحديث عرض العمر عند تحميل الصفحة
+  document.addEventListener('DOMContentLoaded', function() {
+    const display = document.getElementById('birthAgeDisplay');
+    if (display) {
+      const birthDateText = display.textContent.split(' ')[0]; // استخرج التاريخ فقط
+      const age = calculateAge(birthDateText);
+      if (age !== null && birthDateText !== '—') {
+        display.textContent = birthDateText + ' (' + age + ' سنة)';
+      }
+    }
+  });
+</script>
+{% endblock %}

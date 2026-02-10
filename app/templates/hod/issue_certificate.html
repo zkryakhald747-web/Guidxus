@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> › <a href="/hod/">لوحة رئيس القسم</a> › <span>تصدير شهادة لمتدرب</span>
+{% endblock %}
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head"><div class="card-icon">🎖️</div><h3>تصدير شهادة لمتدرب</h3></div>
+  <form method="post" action="/hod/certificates/issue" class="form prestige-form">
+    <div class="grid">
+      <label>رقم المتدرب
+        <input type="text" name="trainee_no" placeholder="مثال: 441234567" required>
+      </label>
+    </div>
+    <div class="actions"><button class="btn btn-primary" type="submit">بحث</button></div>
+  </form>
+</section>
+
+{% if result is not none %}
+<section class="card card-prestige">
+  <div class="card-head"><div class="card-icon">📋</div><h3>النتيجة</h3></div>
+  {% if result.courses and result.courses|length > 0 %}
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>الدورة</th><th>الساعات</th><th>الفترة</th><th>إصدار</th></tr></thead>
+        <tbody>
+          {% for crs in result.courses %}
+          <tr>
+            <td>{{ crs.title }}</td>
+            <td>{{ crs.hours }}</td>
+            <td>{{ crs.start_date }} – {{ crs.end_date }}</td>
+            <td><a class="btn btn-xs" href="#" onclick="alert('إصدار شهادة (قريبًا)');return false;">إصدار 🎖️</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="muted">لا توجد دورات مكتملة لهذا المتدرب (عرض تجريبي).</div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

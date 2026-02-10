@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/inventory/">المستودع</a> › <span>التنبيهات</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .alert-section { margin-bottom: 30px; }
+  .alert-table { width: 100%; border-collapse: collapse; }
+  .alert-table th { 
+    background: #e9f7f9; 
+    color: #0f7d89; 
+    padding: 12px; 
+    text-align: right;
+    border: 1px solid #c5d6de;
+  }
+  .alert-table td { 
+    padding: 12px; 
+    border: 1px solid #e6f0f2;
+  }
+  .alert-table tr:hover { background: #f9fbfc; }
+  .expiry-warning { color: #dc2626; font-weight: 600; }
+  .expiry-ok { color: #10b981; }
+</style>
+
+<div class="card">
+  <div class="card-head">
+    <h3>تنبيهات الأدوية</h3>
+  </div>
+
+  {% if expiring_drugs %}
+  <div class="alert-section">
+    <h4 style="color: #dc2626; margin-bottom: 12px;">⚠️ أدوية قريبة الانتهاء أو منتهية الصلاحية</h4>
+    <table class="alert-table">
+      <thead>
+        <tr>
+          <th>اسم الدواء</th>
+          <th>الاسم العلمي</th>
+          <th>الجرعة</th>
+          <th>تاريخ الإضافة</th>
+          <th>تاريخ الانتهاء</th>
+          <th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for drug in expiring_drugs %}
+        <tr>
+          <td><strong>{{ drug.trade_name }}</strong></td>
+          <td>{{ drug.generic_name }}</td>
+          <td>{{ drug.strength }}</td>
+          <td>{{ drug.added_date }}</td>
+          <td>{{ drug.expiry_date }}</td>
+          <td>
+            {% if drug.is_expired %}
+              <span class="expiry-warning">❌ منتهية الصلاحية</span>
+            {% else %}
+              <span class="expiry-warning">⏰ ستنتهي قريباً</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if not expiring_drugs %}
+  <div class="muted" style="padding: 20px; text-align: center;">
+    <p>✅ جميع الأدوية بحالة جيدة</p>
+    <p style="font-size: 0.9rem; color: #999; margin-top: 10px;">
+      لا توجد أدوية قريبة الانتهاء أو منتهية الصلاحية
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

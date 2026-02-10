@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block breadcrumb %}الصيدلية{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-head"><span class="card-icon">💊</span><h3>لوحة الصيدلية</h3></div>
+
+  <div class="card-grid">
+    <a class="action-card card" href="/clinic/pharmacy/drugs">
+      <div class="icon">📚</div><div class="title">الأصناف</div>
+      <div class="desc">({{ totals.active_drugs or 0 }} صنف نشط)</div>
+    </a>
+	
+	<a class="action-card card" href="/clinic/pharmacy/movements/log">
+		<div class="icon">📑</div><div class="title">سجل الحركات</div>
+		<div class="desc">عرض آخر الحركات مع الفلترة</div>
+	</a>
+
+    
+  </div>
+
+  <div class="muted mt">
+    نصيحة: من صفحة المخزون يمكنك التوريد والصرف والجرد بسرعة، مع اقتراح تلقائي لاسم الدواء.
+  </div>
+</div>
+{% endblock %}

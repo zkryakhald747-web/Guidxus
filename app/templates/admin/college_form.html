@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <a href="/admin/colleges">الكليات</a> ›
+  <span>{{ 'كلية جديدة' if mode=='create' else 'تعديل كلية' }}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .form-card { max-width: 820px; margin: 0 auto; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .field input[type="text"] { padding:8px 10px; border:1px solid #e6e6e6; border-radius:10px; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  @media (max-width: 640px){ .row { grid-template-columns: 1fr; } }
+  .error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; padding:10px; border-radius:10px; margin-bottom:12px; }
+  .hint { color:#6b7280; font-size:.9rem; }
+  .thumb { width:160px; height:80px; object-fit:contain; border:1px solid #eee; background:#fff; padding:6px; border-radius:8px; }
+  .upload-note { font-size:.85rem; color:#6b7280; }
+  .uploads-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+  @media (max-width: 800px){ .uploads-grid { grid-template-columns: 1fr; } }
+  .box { border:1px solid #eee; border-radius:12px; padding:10px; background:#fff; }
+  .box h4 { margin:0 0 6px; font-size:1rem; }
+</style>
+
+<div class="card form-card">
+  <div class="card-head">
+    <div class="card-icon">🎓</div>
+    <h3>{{ 'إنشاء كلية' if mode=='create' else 'تعديل كلية' }}</h3>
+  </div>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" id="collegeForm" enctype="multipart/form-data">
+    <div class="field">
+      <label>اسم الكلية
+        <input type="text" name="name" id="f_name" required value="{{ item.name if item else (preset_name or '') }}">
+      </label>
+    </div>
+
+    <div class="field">
+      <label>اسم الكلية (للطباعة بالعربية)
+        <input type="text" name="name_print_ar" id="f_name_print_ar" value="{{ item.name_print_ar if item and item.name_print_ar else '' }}" placeholder="مثال: الكلية التقنية بنجران">
+      </label>
+      <div class="hint">يُطبع على الشهادات بالعربية. إن تُرك فارغًا سيُستخدم اسم الكلية الأساسي.</div>
+    </div>
+
+    <div class="field">
+      <label>الاسم الإنجليزي للكلية (للطباعة على الشهادة)
+        <input type="text" name="name_en" id="f_name_en" value="{{ item.name_en if item and item.name_en else '' }}" placeholder="مثال: Technical College in Najran">
+      </label>
+      <div class="hint">اختياري، ويظهر في ترويسة الشهادة باللغة الإنجليزية.</div>
+    </div>
+
+    
+    <h4 style="margin-top: 20px; margin-bottom: 12px; font-size: 1rem; color: #333;">المسؤولين</h4>
+    
+    <div class="field">
+      <label>اسم عميد الكلية
+        <input type="text" name="dean_name" id="f_dean" value="{{ item.dean_name if item and item.dean_name else '' }}" placeholder="مثال: أ.د. محمد علي">
+      </label>
+      <div class="hint">سيظهر على الشهادات كموقع عميد الكلية.</div>
+    </div>
+
+    <div class="field">
+      <label>اسم وكيل شؤون المتدربين
+        <input type="text" name="vp_students_name" id="f_vps" value="{{ item.vp_students_name if item and item.vp_students_name else '' }}" placeholder="مثال: أ.د. فاطمة محمود">
+      </label>
+      <div class="hint">سيظهر على الشهادات كموقع وكيل شؤون المتدربين.</div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label class="actions" style="margin-top:28px;">
+          <input type="checkbox" name="is_active" id="f_active" {% if item and item.is_active %}checked{% endif %}>
+          <span>نشطة</span>
+        </label>
+      </div>
+    </div>
+
+    
+    <div class="uploads-grid">
+      <div class="box">
+        <h4>توقيع عميد الكلية</h4>
+        {% if item and item.dean_sign_path %}
+          <img class="thumb" src="{{ item.dean_sign_path }}" alt="Dean Signature">
+        {% else %}
+          <div class="upload-note">لا يوجد ملف محفوظ</div>
+        {% endif %}
+        <div class="field" style="margin-top:6px;">
+          <input type="file" name="dean_sign" accept=".png,.jpg,.jpeg,.webp">
+          <div class="upload-note">يفضّل PNG بخلفية شفافة.</div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h4>توقيع وكيل شؤون المتدربين</h4>
+        {% if item and item.vp_students_sign_path %}
+          <img class="thumb" src="{{ item.vp_students_sign_path }}" alt="VP Students Signature">
+        {% else %}
+          <div class="upload-note">لا يوجد ملف محفوظ</div>
+        {% endif %}
+        <div class="field" style="margin-top:6px;">
+          <input type="file" name="vp_students_sign" accept=".png,.jpg,.jpeg,.webp">
+          <div class="upload-note">يفضّل PNG بخلفية شفافة.</div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h4>ختم شؤون المتدربين</h4>
+        {% if item and item.students_affairs_stamp_path %}
+          <img class="thumb" src="{{ item.students_affairs_stamp_path }}" alt="Students Affairs Stamp">
+        {% else %}
+          <div class="upload-note">لا يوجد ملف محفوظ</div>
+        {% endif %}
+        <div class="field" style="margin-top:6px;">
+          <input type="file" name="students_affairs_stamp" accept=".png,.jpg,.jpeg,.webp">
+          <div class="upload-note">يفضّل PNG بخلفية شفافة.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn btn-primary" type="submit">حفظ</button>
+      <a class="btn btn-secondary" href="/admin/colleges">رجوع</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const req = ['f_name','f_dean','f_vps'].map(id=>document.getElementById(id));
+  const active = document.getElementById('f_active');
+  function check() {
+    const ok = req.every(x => x && x.value.trim().length > 0);
+    active.disabled = !ok;
+    if (!ok) active.checked = false;
+  }
+  req.forEach(i => i.addEventListener('input', check));
+  window.addEventListener('DOMContentLoaded', check);
+</script>
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block breadcrumb %}الصيدلية → الأصناف{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head">
+      <h3>الأصناف</h3>
+      <form method="get" class="inline">
+        <input name="q" value="{{ q }}" placeholder="بحث بالاسم التجاري / العلمي / الشركة" autofocus>
+        <button class="btn">بحث</button>
+        <a class="btn ghost" href="/clinic/pharmacy/drugs">مسح</a>
+      </form>
+    </div>
+
+    
+    <div class="toolbar">
+      <input id="localFilter" placeholder="فلترة فورية داخل الجدول…" />
+      <span class="muted sm">إظهار</span>
+      <select id="pageSize">
+        <option>25</option><option selected>50</option><option>100</option>
+      </select>
+      <span class="muted sm">صف/الصفحة</span>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="tbl" id="tbl-drugs">
+        <thead>
+          <tr>
+            <th data-sort="num" style="width:72px">#</th>
+            <th data-sort="txt">الاسم التجاري ⬍</th>
+            <th data-sort="txt">العلمي</th>
+            <th data-sort="txt">الجرعة</th>
+            <th data-sort="txt">الشكل</th>
+            <th data-sort="txt">الوحدة</th>
+            <th data-sort="txt">الشركة</th>
+            <th data-sort="num" style="width:90px">رصيد</th>
+            <th style="width:150px">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr data-id="{{ r.id }}">
+            <td class="num">{{ r.id }}</td>
+            <td class="b">{{ r.trade_name }}</td>
+            <td class="muted">{{ r.generic_name }}</td>
+            <td>{{ r.strength }}</td>
+            <td>{{ r.form }}</td>
+            <td>{{ r.unit or '—' }}</td>
+            <td class="muted">{{ r.manufacturer }}</td>
+            <td class="num">
+              {% set qty = r.stock_main or 0 %}
+              {% set cls = 'pill ok' if qty >= 5 else ('pill warn' if qty > 0 else 'pill danger') %}
+              <span class="{{ cls }}">{{ qty }}</span>
+            </td>
+            <td>
+              <button class="btn xs" data-edit
+                      data-trade="{{ r.trade_name|e }}"
+                      data-generic="{{ r.generic_name|e }}"
+                      data-strength="{{ r.strength|e }}"
+                      data-form="{{ r.form|e }}"
+                      data-manufacturer="{{ r.manufacturer|e }}"
+                      data-id="{{ r.id }}">تعديل</button>
+
+              <a class="btn xs ghost" title="سجل الحركات" 
+                 href="/clinic/pharmacy/movements/log?drug_id={{ r.id }}">📑</a>
+
+              <a class="btn xs" title="إضافة للصناديق" 
+                 href="/inventory/supply-to-boxes?drug_id={{ r.id }}&drug_name={{ r.trade_name|e }}">💉</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    
+    <div class="pager">
+      <button class="btn ghost" id="prevPage">السابق</button>
+      <span class="muted" id="pageInfo">صفحة 1/1</span>
+      <button class="btn ghost" id="nextPage">التالي</button>
+    </div>
+
+    <div class="muted mt">
+      تلميح: اضغط على عنوان العمود لفرز الجدول. استخدم الفلترة الفورية لتقليل النتائج المعروضة.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>إضافة صنف</h3></div>
+    <form method="post" action="/clinic/pharmacy/drugs/create" class="form-grid">
+      <input name="trade_name" placeholder="الاسم التجاري *" required>
+      <input name="generic_name" placeholder="الاسم العلمي">
+      <input name="strength" placeholder="الجرعة (مثال: 500 mg)">
+      <input name="form" placeholder="الشكل (Tablet / Syrup...)">
+      <input name="manufacturer" placeholder="الشركة المنتجة">
+      <select name="unit" placeholder="وحدة الدواء">
+        <option value="">-- اختر وحدة الدواء --</option>
+        <option value="Tablet">قرص (Tablet)</option>
+        <option value="Capsule">كبسولة (Capsule)</option>
+        <option value="Ampoule">أمبولة (Ampoule)</option>
+        <option value="Vial">قارورة (Vial)</option>
+        <option value="Bottle">زجاجة (Bottle)</option>
+        <option value="Syrup">شراب (Syrup)</option>
+        <option value="Suspension">معلق (Suspension)</option>
+        <option value="Powder">بودرة (Powder)</option>
+        <option value="Cream">كريم (Cream)</option>
+        <option value="Ointment">مرهم (Ointment)</option>
+        <option value="Gel">جل (Gel)</option>
+        <option value="Lotion">غسول (Lotion)</option>
+        <option value="Spray">بخاخ (Spray)</option>
+        <option value="Solution">محلول (Solution)</option>
+        <option value="Drops">قطرات (Drops)</option>
+        <option value="Patch">لصقة (Patch)</option>
+        <option value="Suppository">تحميلة (Suppository)</option>
+        <option value="Injection">حقنة (Injection)</option>
+        <option value="ml">ملي لتر (ml)</option>
+        <option value="gram">غرام (gram)</option>
+        <option value="unit">وحدة (unit)</option>
+      </select>
+      <div class="actions"><button class="btn primary">حفظ</button></div>
+    </form>
+
+    <div class="muted mt">الرصيد يظهر من الصيدلية الرئيسية فقط (MAIN-PHARMA).</div>
+  </div>
+</div>
+
+
+<div class="modal" id="editModal" aria-hidden="true" role="dialog">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card" role="document">
+    <div class="modal-head">
+      <h4>تعديل صنف</h4>
+      <button class="icon-btn" title="إغلاق" aria-label="إغلاق" data-close>×</button>
+    </div>
+    <form method="post" action="/clinic/pharmacy/drugs/update" class="form-grid" id="editForm">
+      <input type="hidden" name="drug_id" id="f_id">
+      <input name="trade_name" id="f_trade" placeholder="الاسم التجاري *" required>
+      <input name="generic_name" id="f_generic" placeholder="الاسم العلمي">
+      <input name="strength" id="f_strength" placeholder="الجرعة">
+      <input name="form" id="f_form" placeholder="الشكل">
+      <input name="manufacturer" id="f_manu" placeholder="الشركة">
+      <select name="unit" id="f_unit" placeholder="وحدة الدواء">
+        <option value="">-- لا توجد وحدة --</option>
+        <option value="Tablet">قرص (Tablet)</option>
+        <option value="Capsule">كبسولة (Capsule)</option>
+        <option value="Ampoule">أمبولة (Ampoule)</option>
+        <option value="Vial">قارورة (Vial)</option>
+        <option value="Bottle">زجاجة (Bottle)</option>
+        <option value="Syrup">شراب (Syrup)</option>
+        <option value="Suspension">معلق (Suspension)</option>
+        <option value="Powder">بودرة (Powder)</option>
+        <option value="Cream">كريم (Cream)</option>
+        <option value="Ointment">مرهم (Ointment)</option>
+        <option value="Gel">جل (Gel)</option>
+        <option value="Lotion">غسول (Lotion)</option>
+        <option value="Spray">بخاخ (Spray)</option>
+        <option value="Solution">محلول (Solution)</option>
+        <option value="Drops">قطرات (Drops)</option>
+        <option value="Patch">لصقة (Patch)</option>
+        <option value="Suppository">تحميلة (Suppository)</option>
+        <option value="Injection">حقنة (Injection)</option>
+        <option value="ml">ملي لتر (ml)</option>
+        <option value="gram">غرام (gram)</option>
+        <option value="unit">وحدة (unit)</option>
+      </select>
+      <div class="actions">
+        <button class="btn" data-close type="button">إلغاء</button>
+        <button class="btn primary" type="submit">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<script>
+(function(){
+  const tbl = document.getElementById('tbl-drugs');
+  const tbody = tbl.tBodies[0];
+  const rowsAll = Array.from(tbody.rows);
+  const localFilter = document.getElementById('localFilter');
+  const pageSizeSel = document.getElementById('pageSize');
+  const prevBtn = document.getElementById('prevPage');
+  const nextBtn = document.getElementById('nextPage');
+  const pageInfo = document.getElementById('pageInfo');
+  const toast = document.getElementById('toast');
+
+  // === فرز بالضغط على رأس العمود ===
+  const getText = (td) => (td?.textContent || '').trim();
+  const parseNum = (s) => parseFloat(s.replace(/[^\d.-]/g,'')) || 0;
+  tbl.querySelectorAll('th[data-sort]').forEach((th, idx) => {
+    th.style.cursor = 'pointer';
+    let asc = true;
+    th.addEventListener('click', () => {
+      const type = th.dataset.sort;
+      currentRows.sort((a,b) => {
+        const A = getText(a.cells[idx]);
+        const B = getText(b.cells[idx]);
+        if (type === 'num') return (parseNum(A) - parseNum(B)) * (asc?1:-1);
+        return A.localeCompare(B, 'ar') * (asc?1:-1);
+      });
+      asc = !asc; render();
+    });
+  });
+
+  // === فلترة فورية ===
+  let currentRows = rowsAll.slice();
+  localFilter.addEventListener('input', () => {
+    const q = localFilter.value.trim().toLowerCase();
+    currentRows = rowsAll.filter(tr => tr.textContent.toLowerCase().includes(q));
+    page = 1; render();
+  });
+
+  // === Pagination بسيط ===
+  let page = 1;
+  function pageSize(){ return parseInt(pageSizeSel.value,10) || 50; }
+  pageSizeSel.addEventListener('change', () => { page = 1; render(); });
+  prevBtn.addEventListener('click', () => { if(page>1){ page--; render(); }});
+  nextBtn.addEventListener('click', () => {
+    const max = Math.max(1, Math.ceil(currentRows.length / pageSize()));
+    if(page<max){ page++; render(); }
+  });
+
+  function render(){
+    // تفريغ الجسم وإظهار الصفحة الحالية
+    tbody.innerHTML = '';
+    const ps = pageSize();
+    const start = (page-1)*ps;
+    const chunk = currentRows.slice(start, start+ps);
+    chunk.forEach(r => tbody.appendChild(r));
+    const max = Math.max(1, Math.ceil(currentRows.length / ps));
+    pageInfo.textContent = `صفحة ${page}/${max}`;
+    prevBtn.disabled = (page<=1);
+    nextBtn.disabled = (page>=max);
+    if(currentRows.length === 0){
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 8; td.className='muted center';
+      td.textContent = 'لا توجد نتائج مطابقة.';
+      tr.appendChild(td); tbody.appendChild(tr);
+    }
+  }
+  render();
+
+  // === Modal: فتح/إغلاق وتعبئة ===
+  const modal = document.getElementById('editModal');
+  const form = document.getElementById('editForm');
+  const f_id = document.getElementById('f_id');
+  const f_trade = document.getElementById('f_trade');
+  const f_generic = document.getElementById('f_generic');
+  const f_strength = document.getElementById('f_strength');
+  const f_form = document.getElementById('f_form');
+  const f_manu = document.getElementById('f_manu');
+
+  function openModal(){ modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); f_trade.focus(); }
+  function closeModal(){ modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); }
+
+  document.addEventListener('click', (e)=>{
+    if(e.target.matches('[data-edit]')){
+      const btn = e.target;
+      f_id.value = btn.dataset.id;
+      f_trade.value = btn.dataset.trade || '';
+      f_generic.value = btn.dataset.generic || '';
+      f_strength.value = btn.dataset.strength || '';
+      f_form.value = btn.dataset.form || '';
+      f_manu.value = btn.dataset.manufacturer || '';
+      openModal();
+    }
+    if(e.target.matches('[data-close]')){ closeModal(); }
+  });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); }});
+
+  // Toast بسيط بعد العودة من الحفظ
+  const params = new URLSearchParams(location.search);
+  if(params.get('msg') === 'updated'){ showToast('تم حفظ التغييرات ✅'); }
+  function showToast(text){
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(()=> toast.classList.remove('show'), 2500);
+  }
+})();
+</script>
+
+<style>
+/* تخطيط */
+.toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
+.toolbar input{max-width:280px}
+.tbl-wrap{max-height:60vh;overflow:auto;border:1px solid var(--border,#e5e7eb);border-radius:10px}
+
+/* رأس ثابت */
+.tbl thead th{position:sticky;top:0;background:#fff;z-index:1}
+
+/* محاذاة أرقام */
+.num{text-align:center}
+.b{font-weight:600}
+
+/* Pager */
+.pager{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px}
+
+/* Modal */
+.modal[aria-hidden="true"]{display:none}
+.modal{position:fixed;inset:0;z-index:1000}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.modal-card{position:relative;margin:5vh auto 0;max-width:560px;background:#fff;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.15);padding:16px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.icon-btn{border:none;background:#f2f4f7;border-radius:8px;padding:4px 10px;cursor:pointer}
+.modal-open{overflow:hidden}
+
+/* Toast */
+.toast{position:fixed;bottom:18px;right:18px;background:#111;color:#fff;padding:10px 14px;border-radius:10px;opacity:0;transform:translateY(8px);transition:.25s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* شارات الرصيد */
+.pill { padding: 2px 8px; border-radius: 999px; font-weight:600; display:inline-block; }
+.pill.ok { background:#e6f8ec; color:#1e8e3e; }
+.pill.warn { background:#fff4e5; color:#b26a00; }
+.pill.danger { background:#fde8e8; color:#b00020; }
+
+/* صِغر نص */
+.sm{font-size:.9em}
+.center{text-align:center}
+</style>
+{% endblock %}

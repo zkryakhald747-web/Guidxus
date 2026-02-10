@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/first-aid/">الإسعافات</a> › <span>إنشاء صندوق جديد</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .form-container {
+    background: #fff;
+    border: 1px solid #e6f0f2;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 6px 18px rgba(14,106,116,0.06);
+  }
+  .form-title {
+    color: #0e6a74;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 20px 0;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #0e6a74;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e6f0f2;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #0e6a74;
+    background: #f7fbfc;
+  }
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+  }
+  .btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+  }
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+  .btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+  }
+  .btn-secondary:hover {
+    background: #d1d5db;
+  }
+</style>
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">📦</div>
+    <h3>إنشاء صندوق إسعافات جديد</h3>
+  </div>
+</section>
+
+<div class="form-container">
+  <form method="POST" action="/first-aid/boxes/create">
+    <h2 class="form-title">بيانات الصندوق</h2>
+
+    <div class="form-group">
+      <label for="box_name">اسم الصندوق *</label>
+      <input 
+        type="text" 
+        id="box_name" 
+        name="box_name" 
+        required 
+        placeholder="مثال: صندوق العيادة الرئيسية"
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="location">مكان الصندوق *</label>
+      <input 
+        type="text" 
+        id="location" 
+        name="location" 
+        required 
+        placeholder="مثال: العيادة - الدور الأول - غرفة الطوارئ"
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="form-actions">
+      <a href="/first-aid/" class="btn btn-secondary">إلغاء</a>
+      <button type="submit" class="btn btn-primary">✓ إنشاء الصندوق</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

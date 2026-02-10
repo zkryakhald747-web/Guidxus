@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <a href="/admin/departments">الأقسام</a> ›
+  <span>{{ 'قسم جديد' if mode=='create' else 'تعديل قسم' }}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .form-card { max-width: 720px; margin: 0 auto; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .field input, .field select { padding:8px 10px; border:1px solid #e6e6e6; border-radius:10px; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  @media (max-width: 640px){ .row { grid-template-columns: 1fr; } }
+  .error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; padding:10px; border-radius:10px; margin-bottom:12px; }
+</style>
+
+<div class="card form-card">
+  <div class="card-head">
+    <div class="card-icon">🏫</div>
+    <h3>{{ 'إنشاء قسم' if mode=='create' else 'تعديل قسم' }}</h3>
+  </div>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post">
+    <div class="row">
+      <div class="field">
+        <label>اسم القسم
+          <input name="name" required value="{{ dept.name if dept else '' }}">
+        </label>
+      </div>
+      <div class="field">
+        <label>الكلية
+          <select name="college" required id="collegeSelect">
+            <option value="">— اختر الكلية —</option>
+            {% for c in colleges %}
+              <option value="{{ c }}" {% if (dept and dept.college==c) or (selected_college and selected_college==c) %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        
+        <small class="muted">يمكن تركه فارغًا وسيظهر كـ «غير محدد».</small>
+      </div>
+      <div class="field">
+        <label class="actions" style="margin-top:28px;">
+          <input type="checkbox" name="is_active" {% if not dept or dept.is_active %}checked{% endif %}>
+          <span>نشط</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn btn-primary" type="submit">حفظ</button>
+      <a class="btn btn-secondary" href="/admin/departments?college={{ dept.college if dept else selected_college }}">رجوع</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

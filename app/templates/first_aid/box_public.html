@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .container { font-family: 'MajallaAR', 'TradArabicAR', Arial; direction: rtl; }
+  .card { background: #fff; }
+  
+  .qr-print-section {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    border: 3px solid #12a4b4;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    text-align: center;
+  }
+  
+  .qr-print-section img {
+    max-width: 160px;
+    display: block;
+    margin-bottom: 10px;
+  }
+  
+  .qr-label {
+    font-size: 11pt;
+    color: #0f7d89;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  
+  .qr-print-btn {
+    padding: 8px 14px;
+    background: #12a4b4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 10pt;
+    font-weight: 600;
+    width: 100%;
+  }
+  
+  .qr-print-btn:hover {
+    background: #0f7d89;
+  }
+  
+  .main-content {
+    margin-right: 200px;
+  }
+  
+  @media print {
+    body { margin: 0; padding: 0; background: white; }
+    .container { max-width: 100%; }
+    .main-content { margin-right: 0; display: none; }
+    .qr-print-section {
+      position: static;
+      margin: 0;
+      padding: 20px;
+      border: none;
+      box-shadow: none;
+      text-align: center;
+      width: 100%;
+      max-width: 300px;
+      margin: auto;
+    }
+    .qr-print-btn { display: none; }
+  }
+  
+  @media print and (max-width: 600px) {
+    .qr-print-section {
+      padding: 15px;
+    }
+    .qr-print-section img {
+      max-width: 140px;
+    }
+  }
+</style>
+
+
+{% if qr_code %}
+<div class="qr-print-section" id="qr-print-box">
+  <img src="{{ qr_code }}" alt="QR Code" id="qr-image">
+  <div class="qr-label">{{ box.box_name }}</div>
+  <div class="qr-label" style="font-size:9pt;margin-bottom:12px;">📍 {{ box.location }}</div>
+  <button class="qr-print-btn" onclick="printQROnly()">🖨️ اطبع QR فقط</button>
+</div>
+{% endif %}
+
+
+<div class="main-content">
+  <div class="container" style="max-width:900px;margin:auto;">
+    <div style="margin-bottom:20px;">
+      <h2 style="text-align:center;color:#0f7d89;margin:0 0 8px 0;">{{ box.box_name }}</h2>
+      <p style="text-align:center;color:#555;margin:0 0 12px 0;font-size:13pt;">📍 {{ box.location }}</p>
+      {% if box.last_reviewed_at %}
+      <p style="text-align:center;color:#10b981;margin:0;font-size:11pt;font-weight:600;">
+        🔍 آخر مراجعة: {{ box.last_reviewed_at.strftime('%d/%m/%Y %H:%M') }}
+      </p>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-bottom:18px;border:1.2px solid #c5d6de;border-radius:10px;">
+      <div style="padding:12px 14px;background:#e9f7f9;border-bottom:1.2px solid #c5d6de;">
+        <b style="color:#0f7d89;">محتويات الصندوق:</b>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f7fbfc;">
+            <th style="padding:10px;text-align:right;border-bottom:1.2px solid #c5d6de;color:#0f7d89;font-weight:700;">اسم الدواء</th>
+            <th style="padding:10px;text-align:center;border-bottom:1.2px solid #c5d6de;color:#0f7d89;font-weight:700;">الكمية</th>
+            <th style="padding:10px;text-align:center;border-bottom:1.2px solid #c5d6de;color:#0f7d89;font-weight:700;">الوحدة</th>
+            <th style="padding:10px;text-align:center;border-bottom:1.2px solid #c5d6de;color:#0f7d89;font-weight:700;">تاريخ الانتهاء</th>
+            <th style="padding:10px;text-align:right;border-bottom:1.2px solid #c5d6de;color:#0f7d89;font-weight:700;">ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr style="border-bottom:1px solid #e6f0f2;">
+            <td style="padding:10px;text-align:right;">{{ item.drug_name }}</td>
+            <td style="padding:10px;text-align:center;font-weight:600;color:#12a4b4;">{{ item.quantity }}</td>
+            <td style="padding:10px;text-align:center;">{{ item.unit }}</td>
+            <td style="padding:10px;text-align:center;{% if item.expiry_date and item.expiry_date < today %}color:red;font-weight:600;{% endif %}">
+              {% if item.expiry_date %}
+                {% if item.expiry_date < today %}
+                  ⚠️ {{ item.expiry_date }}
+                {% else %}
+                  ✅ {{ item.expiry_date }}
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td style="padding:10px;text-align:right;color:#666;">{{ item.notes or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if not items %}
+    <div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:16px;border-radius:8px;text-align:center;">
+      الصندوق فارغ - لا توجد محتويات حالياً
+    </div>
+    {% endif %}
+
+    <div style="text-align:center;color:#888;font-size:10pt;margin-top:20px;padding-top:16px;border-top:1px solid #e6f0f2;">
+      <b>صفحة عامة للصندوق - يمكن الاطلاع على المحتويات وتواريخ الصلاحية</b>
+    </div>
+  </div>
+</div>
+
+<script>
+  function printQROnly() {
+    // إخفاء كل شيء ما عدا QR code
+    const mainContent = document.querySelector('.main-content');
+    const qrBox = document.getElementById('qr-print-box');
+    
+    // إنشة iframe مؤقت للطباعة
+    const printWindow = window.open('', '', 'height=400,width=400');
+    const qrImage = document.getElementById('qr-image');
+    const boxName = '{{ box.box_name }}';
+    const boxLocation = '{{ box.location }}';
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>طباعة QR Code</title>
+        <style>
+          body { 
+            margin: 0; 
+            padding: 20px; 
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f5f5f5;
+          }
+          .qr-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          img {
+            max-width: 300px;
+            margin-bottom: 20px;
+            border: 2px solid #12a4b4;
+            padding: 10px;
+            border-radius: 8px;
+          }
+          h2 {
+            color: #0f7d89;
+            margin: 0 0 8px 0;
+            font-size: 18px;
+          }
+          p {
+            color: #555;
+            margin: 0;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="qr-container">
+          <img src="${qrImage.src}" alt="QR Code">
+          <h2>${boxName}</h2>
+          <p>📍 ${boxLocation}</p>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    
+    // انتظر قليل ثم افتح طباعة
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  }
+</script>
+{% endblock %}

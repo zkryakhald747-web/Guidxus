@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <span>{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🧩</div>
+    <h3>{{ title }}</h3>
+  </div>
+  <p class="muted">{{ desc }}</p>
+</section>
+{% endblock %}

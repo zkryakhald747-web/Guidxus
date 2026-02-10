@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/first-aid/">الإسعافات</a> › <span>الرئيسية</span>
+{% endblock %}
+
+{% block content %}
+
+
+<style>
+  .section { background:#f7fbfc; border-radius:14px; padding:18px; margin-top:14px; }
+  .section-header { margin-bottom:10px; display: flex; justify-content: space-between; align-items: center; }
+  .section-title { color:#0e6a74; margin:0; font-weight:800; }
+  .section-header a { padding: 8px 12px; background: #2563eb; color: white; border-radius: 8px; text-decoration: none; font-size: 0.9rem; }
+  .section-header a:hover { background: #1d4ed8; }
+
+  .kpi-grid {
+    display:grid; gap:16px; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-top: 12px;
+  }
+  .kpi-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f6fbfc 100%);
+    border: 1px solid #e6f0f2;
+    border-radius:12px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow: 0 6px 18px rgba(14,106,116,0.06);
+  }
+  .kpi-card .icon { font-size:1.9rem; }
+  .kpi-meta { display:flex; flex-direction:column; gap:2px; }
+  .kpi-label { font-size:.85rem; color:#5f7280; font-weight:600; }
+  .kpi-value { font-size:1.6rem; font-weight:800; color:#0e6a74; }
+  .kpi-sub { color:#4b6b73; font-size:0.78rem; }
+
+  /* قائمة الصناديق */
+  .boxes-list {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    margin-top: 12px;
+  }
+  .box-card {
+    background: #fff;
+    border: 1px solid #e6f0f2;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 18px rgba(14,106,116,0.06);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+  .box-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(14,106,116,0.12);
+    border-color: #0e6a74;
+  }
+  .box-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .box-card-icon { font-size: 24px; }
+  .box-card-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #0e6a74;
+  }
+  .box-card-info {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e6f0f2;
+    font-size: 0.9rem;
+    color: #5f7280;
+  }
+  .box-card-info span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+</style>
+
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🧰</div>
+    <h3>إدارة صناديق الإسعافات</h3>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="icon">📦</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">إجمالي الصناديق</div>
+        <div class="kpi-value">{{ box_count }}</div>
+        <div class="kpi-sub">صناديق إسعافات مسجلة</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">صناديق الإسعافات 🧰</h2>
+    <a href="/first-aid/boxes/create">+ إنشاء صندوق جديد</a>
+  </div>
+
+  {% if boxes %}
+    <div class="boxes-list">
+      {% for box in boxes %}
+      <a href="/first-aid/boxes/{{ box.id }}" class="box-card">
+        <div class="box-card-header">
+          <div class="box-card-icon">📦</div>
+          <div class="box-card-title">{{ box.box_name }}</div>
+        </div>
+        <div style="color: #5f7280; font-size: 0.95rem; line-height: 1.4;">
+          <p style="margin: 0 0 8px 0;">
+            <strong>المكان:</strong> {{ box.location }}
+          </p>
+          <p style="margin: 0;">
+            <strong>عدد المحتويات:</strong> {{ box.items|length }} عنصر
+          </p>
+        </div>
+        <div class="box-card-info">
+          <span>📅 تم الإنشاء: {{ box.created_at.strftime('%d/%m/%Y') }}</span>
+          {% if box.items %}
+          <span>📋 {{ box.items|length }} دواء</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+  <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 16px; border-radius: 10px; text-align: center; margin-top: 12px;">
+    <p style="margin: 0;">لا توجد صناديق إسعافات حتى الآن</p>
+    <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: #b42318;">
+      <a href="/first-aid/boxes/create" style="color: inherit; text-decoration: underline;">اضغط هنا لإنشاء الصندوق الأول</a>
+    </p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

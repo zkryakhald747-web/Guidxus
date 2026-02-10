@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}سجل المهارات الشخصية{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="page-title">📚 سجل المهارات الشخصية</h1>
+      <p class="text-muted">بحث شامل عن سجل الدورات والساعات التدريبية للمتدربين</p>
+    </div>
+  </div>
+
+  
+  <div class="card shadow-sm mb-4 border-top-primary">
+    <div class="card-body">
+      <form method="get" action="/hod/skills-record/search" class="row g-3">
+        <div class="col-md-8">
+          <label for="trainee_no" class="form-label">رقم المتدرب</label>
+          <input 
+            type="text" 
+            id="trainee_no" 
+            name="trainee_no" 
+            class="form-control"
+            placeholder="أدخل رقم المتدرب"
+            value="{{ search_query or '' }}"
+          >
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-search"></i> بحث
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  
+  {% if error %}
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle"></i> {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  
+  {% if not_found %}
+  <div class="alert alert-info text-center">
+    <i class="fas fa-info-circle"></i>
+    لم يتم العثور على متدربين بـ "<strong>{{ search_query }}</strong>"
+  </div>
+  {% endif %}
+
+  
+  {% if trainees and trainees|length > 0 %}
+  
+  
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card text-center bg-light border-0">
+        <div class="card-body">
+          <h5 class="card-title text-muted">إجمالي الساعات</h5>
+          <p class="card-text h3 text-success">{{ total_hours }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center bg-light border-0">
+        <div class="card-body">
+          <h5 class="card-title text-muted">الشهادات الصادرة</h5>
+          <p class="card-text h3 text-info">{{ total_certificates }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center bg-light border-0">
+        <div class="card-body">
+          <h5 class="card-title text-muted">إجمالي الدورات</h5>
+          <p class="card-text h3 text-warning">
+            {% if total_courses is defined %}
+              {{ total_courses }}
+            {% else %}
+              {% set total_courses = 0 %}
+              {% for t in trainees %}
+                {% set total_courses = total_courses + (t.courses|length) %}
+              {% endfor %}
+              {{ total_courses }}
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  {% for trainee in trainees %}
+  <div class="card shadow-sm mb-4 border-left-primary">
+    
+    <div class="card-header bg-gradient-primary text-white">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h5 class="mb-0">
+            <i class="fas fa-user-circle"></i>
+            {{ trainee.trainee_name }}
+          </h5>
+          <small class="text-light">{{ trainee.trainee_no }}</small>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="badge bg-light text-primary me-2">
+            <i class="fas fa-book"></i> {{ trainee.courses|length }} دورة
+          </span>
+          <span class="badge bg-light text-success me-2">
+            <i class="fas fa-clock"></i> {{ trainee.total_hours }} ساعة
+          </span>
+          <span class="badge bg-light text-info">
+            <i class="fas fa-certificate"></i> {{ trainee.total_certificates }} شهادة
+          </span>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 5%">#</th>
+              <th style="width: 30%">الدورة</th>
+              <th style="width: 15%">الساعات</th>
+              <th style="width: 20%">الفترة</th>
+              <th style="width: 15%">الجهة</th>
+              <th style="width: 15%">الشهادة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in trainee.courses %}
+            <tr>
+              <td class="text-center text-muted">{{ loop.index }}</td>
+              <td>
+                <strong>{{ course.course_title }}</strong>
+                {% if course.description %}
+                <br><small class="text-muted">{{ course.description[:60] }}{% if course.description|length > 60 %}...{% endif %}</small>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge bg-success">{{ course.hours }} ساعة</span>
+              </td>
+              <td>
+                <small>
+                  {% if course.start_date %}
+                    {% set start_str = course.start_date.strftime('%d-%m-%Y') if course.start_date.strftime is defined else course.start_date %}
+                    {{ start_str }}
+                  {% endif %}
+                  <br>
+                  {% if course.end_date %}
+                    {% set end_str = course.end_date.strftime('%d-%m-%Y') if course.end_date.strftime is defined else course.end_date %}
+                    إلى {{ end_str }}
+                  {% endif %}
+                </small>
+              </td>
+              <td>
+                <small>{{ course.provider or '-' }}</small>
+              </td>
+              <td class="text-center">
+                {% if course.certificate_code %}
+                <a href="/verify/{{ course.certificate_code }}" class="btn btn-sm btn-info" target="_blank" title="عرض الشهادة">
+                  <i class="fas fa-certificate"></i> عرض
+                </a>
+                {% else %}
+                <span class="badge bg-danger">لم تُصدر</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="2" class="text-end fw-bold">المجموع:</td>
+              <td class="text-center fw-bold">
+                <span class="badge bg-success" style="font-size: 1rem; padding: 0.6rem 1rem;">{{ trainee.total_hours }} ساعة</span>
+              </td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    
+    <div class="card-footer bg-light">
+      <div class="row">
+        <div class="col-md-12">
+          <a href="/hod/skills-record/pdf/{{ trainee.trainee_no }}" class="btn btn-sm btn-primary" target="_blank">
+            <i class="fas fa-file-pdf"></i> طباعة / تصدير كـ PDF
+          </a>
+          <a href="/hod/skills-record/report/{{ trainee.trainee_no }}" class="btn btn-sm btn-secondary" target="_blank">
+            <i class="fas fa-file-alt"></i> تقرير شامل
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% endif %}
+
+  
+  {% if trainees and trainees|length > 0 %}
+  <div class="row mt-4 mb-4">
+    <div class="col">
+      <a href="/hod/skills-record" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> بحث جديد
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+  .page-title {
+    color: #0f7d89;
+    font-weight: 900;
+    border-bottom: 3px solid #2bb9a6;
+    padding-bottom: 10px;
+  }
+
+  .border-top-primary {
+    border-top: 4px solid #0f7d89 !important;
+  }
+
+  .border-left-primary {
+    border-left: 4px solid #0f7d89 !important;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #0f7d89, #2bb9a6) !important;
+  }
+
+  .card-header h5 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .table thead th {
+    font-weight: 700;
+    color: #0f7d89;
+    border-bottom: 2px solid #2bb9a6;
+  }
+
+  .table tbody tr:hover {
+    background-color: #f0f9f9;
+  }
+
+  .badge {
+    padding: 0.4rem 0.8rem;
+    font-weight: 600;
+  }
+
+  .btn-info {
+    background-color: #0f7d89;
+    border-color: #0f7d89;
+  }
+
+  .btn-info:hover {
+    background-color: #0b5d6b;
+    border-color: #0b5d6b;
+  }
+
+  /* طباعة */
+  @media print {
+    .btn, form, .card-footer {
+      display: none !important;
+    }
+    .page-title {
+      border-bottom: 3px solid #0f7d89;
+    }
+    .card {
+      page-break-inside: avoid;
+    }
+  }
+</style>
+
+{% endblock %}

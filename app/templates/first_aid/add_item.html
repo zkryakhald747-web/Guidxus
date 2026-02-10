@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/first-aid/">الإسعافات</a> › <a href="/first-aid/boxes/{{ box.id }}">{{ box.box_name }}</a> › <span>إضافة دواء</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .form-container {
+    background: #fff;
+    border: 1px solid #e6f0f2;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 700px;
+    margin: 0 auto;
+    box-shadow: 0 6px 18px rgba(14,106,116,0.06);
+  }
+  .form-title {
+    color: #0e6a74;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 20px 0;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #0e6a74;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e6f0f2;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #0e6a74;
+    background: #f7fbfc;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+  }
+  .btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  .btn-primary {
+    background: #2563eb;
+    color: white;
+  }
+  .btn-primary:hover {
+    background: #1d4ed8;
+  }
+  .btn-secondary {
+    background: #e5e7eb;
+    color: #111827;
+  }
+  .btn-secondary:hover {
+    background: #d1d5db;
+  }
+
+  .drug-selector {
+    position: relative;
+  }
+  .drug-select-btn {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e6f0f2;
+    border-radius: 8px;
+    background: white;
+    text-align: right;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  .drug-select-btn:hover {
+    border-color: #0e6a74;
+    background: #f7fbfc;
+  }
+  .drug-select-btn.active {
+    border-color: #0e6a74;
+    background: #e6f0f2;
+  }
+  .drugs-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e6f0f2;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 8px 16px rgba(14,106,116,0.12);
+  }
+  .drugs-dropdown.active {
+    display: block;
+  }
+  .drug-option {
+    padding: 12px;
+    border-bottom: 1px solid #e6f0f2;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .drug-option:hover {
+    background: #f7fbfc;
+  }
+  .drug-option:last-child {
+    border-bottom: none;
+  }
+  .drug-option-name {
+    font-weight: 600;
+    color: #0e6a74;
+  }
+  .drug-option-code {
+    font-size: 0.85rem;
+    color: #5f7280;
+    margin-top: 2px;
+  }
+  .selected-drug {
+    background: #e6f0f2;
+    border: 2px solid #0e6a74;
+  }
+  .no-drugs {
+    padding: 12px;
+    text-align: center;
+    color: #5f7280;
+    font-size: 0.95rem;
+  }
+  .drug-input-hidden {
+    display: none;
+  }
+</style>
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">💊</div>
+    <h3>إضافة دواء إلى صندوق "{{ box.box_name }}"</h3>
+  </div>
+</section>
+
+<div class="form-container">
+  
+  {% if error %}
+  <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+    <strong>⚠️ خطأ:</strong> {{ error }}
+  </div>
+  {% endif %}
+  <form method="POST" action="/first-aid/boxes/{{ box.id }}/add-item" id="addDrugForm">
+    <h2 class="form-title">بيانات الدواء</h2>
+
+    <div class="form-group">
+      <label>اختر الدواء من الصيدلية *</label>
+      <div class="drug-selector">
+        <button type="button" class="drug-select-btn" id="drugSelectBtn">
+          ← اختر دواء من القائمة
+        </button>
+        <div class="drugs-dropdown" id="drugsDropdown">
+          {% if drugs %}
+            {% for drug in drugs %}
+            <div class="drug-option" data-drug-name="{{ drug.trade_name }}" data-drug-code="{{ drug.id }}" data-available="{{ drug.available_quantity or 0 }}" onclick="selectDrug(this)">
+              <div class="drug-option-name">{{ drug.trade_name or drug.generic_name }}</div>
+              <div class="drug-option-code">
+                {% if drug.generic_name %}الاسم العام: {{ drug.generic_name }}{% endif %}
+                {% if drug.id %} | الرمز: {{ drug.id }}{% endif %}
+                {% if drug.available_quantity %} | المتاح: <strong>{{ drug.available_quantity }}</strong>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="no-drugs">لا توجد أدوية متاحة في الصيدلية</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="drug_name">اسم الدواء المختار *</label>
+      <input 
+        type="text" 
+        id="drug_name" 
+        name="drug_name" 
+        required 
+        readonly
+        placeholder="سيتم ملؤه عند الاختيار"
+        style="background: #f7fbfc; cursor: not-allowed;"
+      >
+    </div>
+
+    <div class="form-group drug-input-hidden">
+      <input 
+        type="hidden" 
+        id="drug_code" 
+        name="drug_code"
+      >
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="quantity">الكمية * <span id="maxQuantityLabel"></span></label>
+        <input 
+          type="number" 
+          id="quantity" 
+          name="quantity" 
+          required 
+          min="1" 
+          placeholder="10"
+        >
+        <small id="quantityHint" style="color: #5f7280; margin-top: 4px; display: block;">
+          💡 اختر دواء أولاً لترى الكمية المتاحة
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="unit">وحدة القياس</label>
+        <select id="unit" name="unit">
+          <option value="عدد">عدد</option>
+          <option value="ملغ">ملغ</option>
+          <option value="مل">مل</option>
+          <option value="غرام">غرام</option>
+          <option value="وحدة دولية">وحدة دولية</option>
+          <option value="أخرى">أخرى</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="expiry_date">تاريخ انتهاء الصلاحية (اختياري)</label>
+      <input 
+        type="date" 
+        id="expiry_date" 
+        name="expiry_date"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="notes">ملاحظات (اختياري)</label>
+      <textarea 
+        id="notes" 
+        name="notes" 
+        rows="3" 
+        placeholder="أي ملاحظات أخرى عن الدواء..."
+      ></textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="/first-aid/boxes/{{ box.id }}" class="btn btn-secondary">إلغاء</a>
+      <button type="submit" class="btn btn-primary">✓ إضافة الدواء</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const drugSelectBtn = document.getElementById('drugSelectBtn');
+  const drugsDropdown = document.getElementById('drugsDropdown');
+  const drugNameInput = document.getElementById('drug_name');
+  const drugCodeInput = document.getElementById('drug_code');
+  const form = document.getElementById('addDrugForm');
+
+  // فتح/إغلاق القائمة
+  drugSelectBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    drugsDropdown.classList.toggle('active');
+    drugSelectBtn.classList.toggle('active');
+  });
+
+  // إغلاق القائمة عند النقر خارجها
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.drug-selector')) {
+      drugsDropdown.classList.remove('active');
+      drugSelectBtn.classList.remove('active');
+    }
+  });
+
+  // اختيار دواء
+  function selectDrug(element) {
+    const name = element.dataset.drugName;
+    const code = element.dataset.drugCode;
+    const available = parseInt(element.dataset.available) || 0;
+    
+    drugNameInput.value = name;
+    drugCodeInput.value = code || '';
+    
+    // تحديث الحد الأقصى
+    const quantityInput = document.getElementById('quantity');
+    quantityInput.max = available;
+    quantityInput.value = '';
+    
+    // تحديث العنوان والرسالة
+    const maxLabel = document.getElementById('maxQuantityLabel');
+    const hint = document.getElementById('quantityHint');
+    
+    if (available > 0) {
+      maxLabel.textContent = `(الحد الأقصى: ${available})`;
+      maxLabel.style.color = '#0e6a74';
+      hint.innerHTML = `💡 يمكنك إضافة حتى <strong>${available}</strong> وحدة من هذا الدواء`;
+      hint.style.color = '#065f46';
+      hint.style.backgroundColor = '#ecfdf5';
+      hint.style.padding = '6px 10px';
+      hint.style.borderRadius = '6px';
+    } else {
+      maxLabel.textContent = '(غير متاح)';
+      maxLabel.style.color = '#dc2626';
+      hint.innerHTML = `⚠️ هذا الدواء غير متاح حالياً في المخزون`;
+      hint.style.color = '#991b1b';
+      hint.style.backgroundColor = '#fef2f2';
+      hint.style.padding = '6px 10px';
+      hint.style.borderRadius = '6px';
+      quantityInput.disabled = true;
+    }
+    
+    drugsDropdown.classList.remove('active');
+    drugSelectBtn.classList.remove('active');
+    drugSelectBtn.textContent = '✓ ' + name;
+    drugSelectBtn.style.color = '#0e6a74';
+  }
+
+  // التحقق من اختيار الدواء قبل الإرسال
+  form.addEventListener('submit', function(e) {
+    if (!drugNameInput.value.trim()) {
+      e.preventDefault();
+      alert('الرجاء اختيار دواء من القائمة');
+    }
+  });
+</script>
+
+{% endblock %}

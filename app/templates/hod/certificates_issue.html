@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> ›
+  <a href="/hod/courses">الدورات</a> ›
+  <span>الشهادات</span>
+{% endblock %}
+
+{% block content %}
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🎖️</div>
+    <h3>إصدار الشهادات – {{ course.title }}</h3>
+  </div>
+  <p class="muted">تظهر هنا قائمة المتدربين الذين تم وضعهم كـ <b>حاضرين</b> في هذه الدورة.</p>
+</section>
+
+{% if request.query_params.get('issued') %}
+  <div class="alert alert-success" role="alert">
+    <h4 class="alert-heading">✓ تم بنجاح!</h4>
+    <p>
+      تم إصدار <strong>{{ request.query_params.get('issued') }}</strong> شهادة بنجاح.
+      {% if request.query_params.get('skipped') and request.query_params.get('skipped')|int > 0 %}
+        <br><small>(تم تخطي {{ request.query_params.get('skipped') }} شهادات مُصدرة بالفعل)</small>
+      {% endif %}
+    </p>
+  </div>
+{% endif %}
+
+{% if not attendees %}
+  <div class="alert alert-info">لا يوجد متدربون حاضرين لإصدار الشهادات لهم.</div>
+{% else %}
+  <div class="actions" style="margin-bottom:10px">
+    <a class="btn btn-primary" href="/hod/certificates/issue-all?course_id={{ course.id }}" onclick="return confirm('هل تريد إصدار شهادات لجميع الحاضرين؟');">
+      📋 إصدار جميع الشهادات
+    </a>
+  </div>
+
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>م</th>
+          <th>اسم المتدرب</th>
+          <th>الرقم التدريبي</th>
+          <th>التخصص</th>
+          <th>الحالة</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in attendees %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ t.trainee_name }}</td>
+          <td>{{ t.trainee_no }}</td>
+          <td>{{ t.trainee_major or '—' }}</td>
+          <td>
+            {% if t.certificate_code %}
+              <span class="badge bg-success">✓ مُصدرة</span>
+            {% else %}
+              <span class="badge bg-warning">⏳ قيد الانتظار</span>
+            {% endif %}
+          </td>
+          <td>
+            <a class="btn btn-xs" href="/hod/certificates/print/{{ course.id }}/{{ t.trainee_no }}">
+              إصدار شهادة 🎓
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{% endblock %}
+

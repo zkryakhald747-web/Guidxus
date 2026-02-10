@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>شهادة حضورة دورة تدريبية</title>
+<style>
+  /* صفحة A4 أفقياً (قياس صارم + بدون كسور) */
+  @page { size: 297mm 210mm; margin: 0; }
+  html,body {
+    width:297mm; height:210mm; margin:0;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    background:#fff;
+    font-family:"TraditionalArabicLocal","MajallaLocal","Tahoma",sans-serif; /* العربي افتراضي */
+  }
+
+  /* خطوط محلية (المعتمدة) */
+  @font-face{
+    font-family:"MajallaLocal";
+    src:url("/static/fonts/Majalla.ttf") format("truetype");
+    font-weight:400 900; font-style:normal;
+  }
+  @font-face{
+    font-family:"TraditionalArabicLocal";
+    src:url("/static/fonts/Traditional-Arabic.ttf") format("truetype");
+    font-weight:400 900; font-style:normal;
+  }
+
+  :root{
+    --blue:#0f7d89; --green:#2bb9a6; --ink:#1e293b; --muted:#64748b; --rule:#d9e3ea;
+  }
+
+  /* عنصر يفرض اتجاه يسار->يمين لتواريخ/أرقام داخل نص عربي */
+  .ltr{ direction:ltr; unicode-bidi:bidi-override; display:inline-block; }
+
+  /* لوحة الشهادة + حدود */
+  .sheet{
+    box-sizing:border-box; width:297mm; height:210mm; overflow:hidden;
+    border:8px solid var(--blue); box-shadow:0 0 0 3px #fff inset, 0 0 0 6px var(--green) inset;
+    /* خفّض الحشوة العلوية لجلب المحتوى للأعلى (حتى تبقى مسافة كافية من الحدود) */
+    padding:0mm 10mm 4mm;
+    display:grid;
+    grid-template-rows:
+      auto  /* الهيدر */
+      auto  /* فاصل الهيدر */
+      auto  /* العنوان */
+      auto  /* تشهد */
+      auto  /* الاسم */
+      auto  /* الرقم */
+      auto  /* نص قد حضر */
+      auto  /* التواقيع + ختم */
+      1fr;  /* الفوتر - يملأ الباقي */
+    row-gap: 2mm;
+    color:var(--ink);
+  }
+
+  /* ===== الهيدر ===== */
+  .hdr{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+  .hdr .ar,
+  .hdr .en{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+  }
+  .hdr .ar{
+    color:var(--blue);
+    font-weight:750;
+    line-height:1.15;
+    font-size:5.5mm;
+    font-family:"MajallaLocal";
+    margin-left:50mm; /* إزاحة أقل للنص العربي */
+  }
+  .hdr .en{
+    direction:ltr;
+    color:var(--blue);
+    font-weight:750;
+    line-height:1.15;
+    font-size:5.5mm;
+    font-family:"MajallaLocal";
+    margin-right:40mm; /* إزاحة للنص الإنجليزي */
+  }
+  .hdr .logo{ width:40mm; height:auto; object-fit:contain; display:block; margin-inline:auto; }
+  /* Top centered logo for course completion certificate */
+  /* سحب اللوغو لأعلى أكثر لتوفير مساحة أسفل الورقة */
+  .top-logo{ width:32mm; height:auto; object-fit:contain; display:block; margin:12mm auto -24mm; }
+
+  .rule{ height:0; border-top:2px solid var(--blue); position:relative; }
+  .rule::after{ content:""; position:absolute; left:25%; right:25%; top:-2px; height:2px; background:var(--green); }
+
+  /* ===== العنوان ===== */
+  .title{
+    display:flex; align-items:center; justify-content:center;
+    font-family:"MajallaLocal","TraditionalArabicLocal",sans-serif;
+    font-weight:900; font-size:16mm; color:var(--blue); margin:0;
+  }
+
+  /* ===== تشهد ===== */
+  .subtitle{
+    display:flex; align-items:center; justify-content:center;
+    font-size:6mm; color:#334155; margin:0;
+    font-family:"TraditionalArabicLocal";
+  }
+
+  /* ===== الاسم ===== */
+  .namewrap{ display:flex; align-items:center; justify-content:center; }
+  .pill{
+    padding:5mm 18mm; border-radius:999px;
+    /* Fallback صلب قبل التدرّج لضمان اتساق جميع المحركات */
+    background:#2bb9a6;
+    background:linear-gradient(90deg,var(--green),var(--blue));
+    color:#fff; font-weight:900; font-size:8mm; 
+    box-shadow:0 2mm 6mm rgba(0,0,0,.12);
+    font-family:"TraditionalArabicLocal";
+    /* تحسينات توافقية طفيفة دون تغيير الشكل */
+    -webkit-background-clip: padding-box; background-clip: padding-box;
+  }
+
+  /* ===== الرقم التدريبي ===== */
+  .train{ display:flex; align-items:center; justify-content:center; font-size:6mm; font-weight:800; font-family:"TraditionalArabicLocal"; }
+
+  /* ===== نص قد حضر ===== */
+  .body{ display:flex; align-items:center; justify-content:center; text-align:center; }
+  .body p{ margin:0; font-size:6mm; line-height:1.8; font-weight:700; font-family:"TraditionalArabicLocal"; }
+
+  /* ===== التواقيع + الختم ===== */
+  .signing{ display:grid; grid-template-columns:1fr 24mm 1fr; align-items:start; column-gap:16mm; }
+  .sig{ position:relative; text-align:center; padding-top:19mm; }
+  .sig::before{
+    content:""; position:absolute;
+    top:15mm; left:10%; right:10%;
+    border-top:2mm solid var(--blue); height:0; border-radius:1mm;
+  }
+  .sig img.sign{ height:14mm; width:auto; display:block; margin:2mm auto 3mm; opacity:.95; }
+  .sig .role{ color:var(--blue); font-size:7mm; font-weight:700; margin-bottom:2mm; font-family:"MajallaLocal"; }
+  .sig .name{ font-size:6mm; font-weight:800; font-family:"TraditionalArabicLocal"; }
+
+  .stampwrap{ display:flex; align-items:start; justify-content:center; }
+  .stamp{ width:35mm; height:35mm; object-fit:contain; opacity:.95; }
+
+  /* ===== الفوتر ===== */
+  .footer{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items:flex-end;
+    justify-items:center;
+    column-gap:0;
+    height:auto;
+    padding-bottom:2mm;
+  }
+
+  .f-left{
+    grid-column:3; justify-self:end; display:flex; align-items:flex-end;
+  }
+  .barcode{ width:16mm; height:16mm; object-fit:contain; border:1px solid var(--rule); padding:1mm; background:#fff; margin-top:-12mm; }
+
+  .f-mid{
+    grid-column:2; justify-self:center; text-align:center;
+    color:#334155; font-size:4.8mm; font-family:"TraditionalArabicLocal";
+  }
+
+  .f-right{
+    grid-column:1; justify-self:start; width:100%; text-align:right;
+    color:#334155; font-size:3.5mm; font-family:"TraditionalArabicLocal";
+  }
+  .f-right > div{ direction:rtl; unicode-bidi:plaintext; margin:0; text-align:right; }
+
+  .invalid{ text-align:center; color:#a01212; font-weight:900; font-size:4.8mm; margin-top:3mm; font-family:"TraditionalArabicLocal"; }
+
+  /* وضع الطباعة: إزالة أي عناصر قد تسبب artifact */
+  @media print{
+    .sheet{ box-shadow:none !important; }
+    .namewrap{ background:transparent !important; }
+    .pill{
+      background:#2bb9a6 !important;   /* لون صلب يطابق التدرّج */
+      background-image:none !important; /* إلغاء التدرّج تمامًا */
+      box-shadow:none !important;       /* إزالة الظل نهائيًا */
+      -webkit-filter:none !important; filter:none !important;
+    }
+    *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+
+  @media print{ *{ page-break-inside:avoid; page-break-before:avoid; page-break-after:avoid; } }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    
+      
+    <div style="text-align:center; margin-top:2mm;">
+      {% if logo_src %}
+        <img class="top-logo" src="{{ logo_src }}" alt="Logo">
+      {% endif %}
+    </div>
+
+    <div class="hdr">
+      <div class="ar">
+        <div>المملكة العربية السعودية</div>
+        <div>المؤسسة العامة للتدريب التقني والمهني</div>
+        <div>{{ college_name }}</div>
+      </div>
+      <div style="width:40mm;"></div>
+      <div class="en">
+        <div>Kingdom of Saudi Arabia</div>
+        <div>Technical & Vocational Training Corporation</div>
+        <div>{{ college_name_en }}</div>
+      </div>
+    </div>
+
+    <div class="rule" aria-hidden="true"></div>
+
+    
+    <h1 class="title">شهادة حضورة دورة تدريبية</h1>
+
+    
+    <div class="subtitle">تشهد {{ college_name }} بأن المتدرب:</div>
+
+    
+    <div class="namewrap">
+      <div class="pill">{{ trainee.trainee_name }}</div>
+    </div>
+
+    
+    <div class="train">الرقم التدريبي: {{ trainee.trainee_no }}</div>
+
+    
+    <div class="body">
+      <p>
+        قد حضر البرنامج التدريبي {{ course.title }} لمدة {{ course.hours }} ساعة
+        المنعقد خلال الفترة
+        <span class="ltr">{{ course.start_date and course.start_date.strftime('%Y-%m-%d') }}</span>
+        إلى
+        <span class="ltr">{{ course.end_date and course.end_date.strftime('%Y-%m-%d') }}</span>.<br>
+        وتقديرًا لحضوره البرنامج واجتيازه مُنحت له هذه الشهادة، سائلين الله له التوفيق والنجاح.
+      </p>
+    </div>
+
+    
+    <div class="signing">
+      <div class="sig">
+        <div class="role">وكيل شؤون المتدربين</div>
+        <img class="sign" src="{{ vp_sign_url }}" alt="Signature VP">
+        <div class="name">{{ vp_name }}</div>
+      </div>
+
+      <div class="stampwrap">
+        <img class="stamp" src="{{ stamp_url }}" alt="Stamp">
+      </div>
+
+      <div class="sig">
+        <div class="role">عميد الكلية التقنية</div>
+        <img class="sign" src="{{ dean_sign_url }}" alt="Signature Dean">
+        <div class="name">{{ dean_name }}</div>
+      </div>
+    </div>
+
+    
+    <div class="footer">
+      <div class="f-right">
+        <div>رقم الشهادة: {{ certificate_no }}</div>
+        <div>النسخة: {{ copy_no }}</div>
+      </div>
+      <div class="f-mid">
+        <div class="invalid">أي كشط أو تعديل في هذه الشهادة يعتبر لاغيًا</div>
+      </div>
+      <div class="f-left">
+        <img class="barcode" src="{{ barcode_url }}" alt="Barcode">
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block breadcrumb %}الصيدلية → سجل الحركات{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <h3>سجل الحركات (آخر 500)</h3>
+    <form method="get" class="inline" id="filterForm" autocomplete="off">
+      
+      <input type="hidden" name="drug_id" id="drug_id">
+      <div class="smart-wrap">
+        <input type="text" name="drug_q" id="drug_q" value="{{ drug_q or '' }}"
+               placeholder="ابحث بالاسم التجاري / العلمي / الشركة" dir="rtl" autocomplete="off">
+        <div class="smart-dd" id="smart_dd" hidden></div>
+      </div>
+
+      <select name="move_type">
+        <option value="">الكل</option>
+        <option value="in" {{ 'selected' if move_type=='in' else '' }}>توريد</option>
+        <option value="out" {{ 'selected' if move_type=='out' else '' }}>صرف</option>
+        <option value="adjust" {{ 'selected' if move_type=='adjust' else '' }}>جرد</option>
+      </select>
+
+      <input type="date" name="date_from" value="{{ date_from or '' }}" title="من تاريخ">
+      <input type="date" name="date_to" value="{{ date_to or '' }}" title="إلى تاريخ">
+      <button class="btn">تصفية</button>
+      <a href="/clinic/pharmacy/movements/log" class="btn ghost">مسح</a>
+      <button class="btn ghost" id="btnExport" type="button">تصدير CSV (حسب الفلاتر)</button>
+      <button class="btn ghost" id="btnExportAll" type="button">تصدير CSV (الكل)</button>
+    </form>
+  </div>
+
+  {# ==== كتلة التنبيه (جديدة) ==== #}
+  {% set _msg  = request.query_params.get('msg') %}
+  {% set _need = request.query_params.get('need') %}
+  {% set _have = request.query_params.get('have') %}
+  {% if _msg == 'in_ok' %}
+    <div class="alert alert-success">تم تسجيل التوريد بنجاح.</div>
+  {% elif _msg == 'out_ok' %}
+    <div class="alert alert-success">تم تسجيل الصرف بنجاح.</div>
+  {% elif _msg == 'adjust_ok' %}
+    <div class="alert alert-success">تم تسجيل الجرد بنجاح.</div>
+  {% elif _msg == 'no_change' %}
+    <div class="alert alert-info">لا يوجد تغيير في الرصيد.</div>
+  {% elif _msg == 'err_insufficient' %}
+    <div class="alert alert-danger">
+      لا يمكن صرف <b>{{ _need }}</b>، الرصيد المتوفر حاليًّا <b>{{ _have }}</b> فقط.
+    </div>
+  {% elif _msg == 'err_unknown' %}
+    <div class="alert alert-danger">حدث خطأ غير متوقع أثناء العملية. حاول مرة أخرى.</div>
+  {% endif %}
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>التاريخ</th>
+        <th>الدواء</th>
+        <th>النوع</th>
+        <th class="num">الكمية</th>
+        <th class="num">الكمية الفعلية ±</th>
+        <th>ملاحظة</th>
+        <th>المستخدم</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.created_at.strftime("%Y-%m-%d %H:%M") if r.created_at else '' }}</td>
+        <td>
+          <b>
+            {% if r.trade_name and r.trade_name.strip() %}
+              {{ r.trade_name }}
+            {% elif r.drug_name and r.drug_name.strip() %}
+              {{ r.drug_name }}
+            {% else %}
+              —
+            {% endif %}
+          </b>
+          <span class="muted">{{ r.generic_name }}</span>
+          <div class="muted sm">{{ r.strength }} / {{ r.form }}</div>
+        </td>
+        <td>
+          {% if r.move_type == 'in' %}
+            <span class="pill ok">توريد</span>
+          {% elif r.move_type == 'out' %}
+            <span class="pill danger">صرف</span>
+          {% else %}
+            <span class="pill warn">جرد</span>
+          {% endif %}
+        </td>
+        <td class="num">{{ r.qty }}</td>
+        <td class="num">{{ r.effective_qty }}</td>
+        <td>{{ r.ref_note or '' }}</td>
+        <td>{{ r.user_name or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+/* === تصدير CSV (لا نحذف drug_q حتى مع وجود drug_id) === */
+(function(){
+  const form   = document.getElementById('filterForm');
+  const btn    = document.getElementById('btnExport');
+  const btnAll = document.getElementById('btnExportAll');
+  if(!form) return;
+
+  function cleanParams(p){
+    // أبقِ drug_q دومًا. drug_id يُرسل فقط إن كان غير فارغ.
+    const did = p.get('drug_id');
+    if (!did || did.trim() === '') p.delete('drug_id');
+
+    // نظّف المفاتيح الفارغة الأخرى
+    for (const k of ['move_type','date_from','date_to']) {
+      if (!p.get(k)) p.delete(k);
+    }
+    return p;
+  }
+
+  if(btn){
+    btn.addEventListener('click', ()=>{
+      const params = cleanParams(new URLSearchParams(new FormData(form)));
+      params.set('export','csv');
+      const url = '/clinic/pharmacy/movements/log?' + params.toString();
+      window.location.href = url;
+    });
+  }
+
+  // تصدير كل السجل بدون أي فلتر
+  if(btnAll){
+    btnAll.addEventListener('click', ()=>{
+      window.location.href = '/clinic/pharmacy/movements/log?export=csv';
+    });
+  }
+
+  // عند التصفية العادية: عطّل الحقول الفارغة مؤقتًا
+  form.addEventListener('submit', ()=>{
+    const toClean = ["drug_id","drug_q","move_type","date_from","date_to"];
+    const disabled = [];
+    toClean.forEach(name=>{
+      const el = form.querySelector(`[name="${name}"]`);
+      if (el && !el.value) { el.disabled = true; disabled.push(el); }
+    });
+    setTimeout(()=> disabled.forEach(el=> el.disabled = false), 0);
+  });
+})();
+
+/* === البحث الذكي: اقتراحات أثناء الكتابة + تنقّل بالكيبورد === */
+(function(){
+  const inp = document.getElementById('drug_q');
+  const dd  = document.getElementById('smart_dd');
+  const hid = document.getElementById('drug_id');
+  if(!inp || !dd || !hid) return;
+
+  let items = [];
+  let open = false;
+  let idx = -1;
+  let lastQ = '';
+  let aborter = null;
+  const DEBOUNCE = 180;
+  let t = null;
+
+  function escReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function highlight(text, q){
+    if(!q) return text;
+    try{
+      const re = new RegExp('(' + escReg(q) + ')','ig');
+      return (text||'').replace(re,'<mark>$1</mark>');
+    }catch(_){ return text; }
+  }
+
+  function render(q){
+    if(!items.length){
+      dd.innerHTML = `<div class="empty">لا توجد نتائج مطابقة.</div>`;
+      dd.hidden = false; open = true; idx = -1; return;
+    }
+    dd.innerHTML = items.map((it,i)=>{
+      const line1 = highlight(it.label || it.trade_name || '', q);
+      const manu  = it.manufacturer || it.manu || '';
+      const active = (i===idx)?' active':'';
+      return `<div class="opt${active}" data-i="${i}">
+                <div class="line1">${line1}</div>
+                ${manu ? `<div class="sub">${highlight(manu, q)}</div>` : ''}
+              </div>`;
+    }).join('');
+    dd.hidden = false; open = true;
+  }
+
+  async function fetchQ(q){
+    if(aborter) aborter.abort();
+    aborter = new AbortController();
+    try{
+      const r = await fetch('/clinic/pharmacy/drugs/search?q=' + encodeURIComponent(q), {
+        headers:{'Accept':'application/json'},
+        signal: aborter.signal
+      });
+      if(!r.ok) return [];
+      const data = await r.json();
+      return data.items || [];
+    }catch(_){ return []; }
+  }
+
+  function select(i){
+    const it = items[i];
+    if(!it) return;
+    inp.value = it.label || it.trade_name || '';
+    hid.value = it.id || '';
+    inp.dataset.locked = '1';           // قفل مؤقت بعد الاختيار
+    dd.hidden = true; open = false; idx = -1;
+  }
+
+  inp.addEventListener('input', ()=>{
+    const q = inp.value.trim();
+
+    // إذا كان الحدث ناتج عن select() لا نمسح الـID ولا ننفّذ بحث
+    if (inp.dataset.locked === '1') {
+      delete inp.dataset.locked;
+      return;
+    }
+
+    // المستخدم كتب فعلًا -> امسح الـID وابدأ بحث موقّت
+    hid.value = '';
+    if (t) clearTimeout(t);
+
+    if (q.length < 2) {
+      items = [];
+      dd.hidden = true; open = false; idx = -1;
+      return;
+    }
+
+    t = setTimeout(async ()=>{
+      if (q === lastQ) return;
+      lastQ = q;
+      items = await fetchQ(q);
+      idx = -1;
+      render(q);
+    }, DEBOUNCE);
+  });
+
+  inp.addEventListener('focus', ()=>{
+    const q = inp.value.trim();
+    if(q.length >= 2 && items.length){ render(q); }
+  });
+
+  inp.addEventListener('keydown', (e)=>{
+    if(!open) return;
+    const max = items.length;
+    if(e.key === 'ArrowDown'){ idx = (idx+1<max)? idx+1 : 0; render(lastQ); e.preventDefault(); }
+    else if(e.key === 'ArrowUp'){ idx = (idx>0)? idx-1 : max-1; render(lastQ); e.preventDefault(); }
+    else if(e.key === 'Enter'){
+      if(idx>=0){ select(idx); e.preventDefault(); }
+    } else if(e.key === 'Escape'){ dd.hidden=true; open=false; idx=-1; }
+  });
+
+  dd.addEventListener('mousedown', (e)=>{
+    const el = e.target.closest('.opt');
+    if(!el) return;
+    select(parseInt(el.dataset.i,10));
+    e.preventDefault();
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!dd.contains(e.target) && e.target!==inp){ dd.hidden=true; open=false; idx=-1; }
+  });
+})();
+</script>
+
+<style>
+/* حبوب الحالة */
+.pill { padding:2px 8px; border-radius:999px; font-weight:600; font-size:.9em }
+.pill.ok { background:#e6f8ec; color:#1e8e3e }
+.pill.danger { background:#fde8e8; color:#b00020 }
+.pill.warn { background:#fff4e5; color:#b26a00 }
+.num { text-align:center }
+.sm { font-size:.9em }
+
+/* البحث الذكي */
+.smart-wrap{position:relative; display:inline-block; min-width:320px}
+.smart-wrap input{min-width:320px}
+.smart-dd{
+  position:absolute; inset-inline-start:0; inset-block-start:100%;
+  background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+  box-shadow:0 10px 24px rgba(0,0,0,.08); margin-top:4px; max-height:260px;
+  overflow:auto; width:100%; z-index:50; direction:rtl
+}
+.smart-dd .opt{padding:8px 12px; cursor:pointer; display:flex; flex-direction:column; gap:2px}
+.smart-dd .opt:hover, .smart-dd .opt.active{background:#f8fafc}
+.smart-dd .line1{font-weight:700}
+.smart-dd .sub{font-size:.9em; color:#667085}
+.smart-dd .empty{padding:10px 12px; color:#98a2b3}
+.smart-dd mark{background:#fff3c4; color:#111; padding:0 2px; border-radius:3px}
+</style>
+{% endblock %}

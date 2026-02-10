@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <a href="/admin/users">المستخدمون</a> ›
+  <span>{{ 'مستخدم جديد' if mode == 'create' else 'تعديل مستخدم' }}</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .form-card { max-width: 720px; margin: 0 auto; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  .field label span { font-weight:700; }
+  .error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; padding:10px; border-radius:10px; margin-bottom:12px; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  @media (max-width: 640px){ .row { grid-template-columns: 1fr; } }
+  .hint { color:#6b7280; font-size:.9rem; }
+</style>
+
+<div class="card form-card">
+  <div class="card-head">
+    <div class="card-icon">👤</div>
+    <h3>{{ 'إنشاء مستخدم' if mode == 'create' else 'تعديل مستخدم' }}</h3>
+  </div>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post">
+    <div class="row">
+      <div class="field">
+        <label><span>الاسم الكامل</span>
+          <input name="full_name" required value="{{ user.full_name if user else '' }}">
+        </label>
+      </div>
+      <div class="field">
+        <label><span>اسم المستخدم</span>
+          <input name="username" required value="{{ user.username if user else '' }}">
+        </label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label><span>كلمة المرور {{ '(اتركها فارغة للإبقاء الحالية)' if mode=='edit' else '' }}</span>
+          <input name="password" type="password" {{ '' if mode=='edit' else 'required' }}>
+        </label>
+      </div>
+      {% set role_ctx = current_user_role or {} %}
+      {% if role_ctx.get('is_admin') %}
+      <div class="field">
+        <label class="actions" style="margin-top: 28px;">
+          <input type="checkbox" name="is_admin_f" id="is_admin_checkbox" {% if user and user.is_admin %}checked{% endif %}>
+          <span>سوبر أدمن (صلاحيات كاملة)</span>
+        </label>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="row">
+      {% if role_ctx.get('is_admin') %}
+      <div class="field">
+        <label class="actions">
+          <input type="checkbox" name="is_college_admin_f" id="is_college_admin_checkbox" {% if user and user.is_college_admin %}checked{% endif %}>
+          <span>أدمن كلية</span>
+        </label>
+        <div id="college_admin_field" style="margin-top:8px; {% if not (user and user.is_college_admin) %}display:none;{% endif %}">
+          <label><span>الكلية <span style="color:#e00">*</span></span>
+            <select name="college_admin_college" id="college_admin_select" {% if user and user.is_college_admin or is_college_admin_f %}required{% endif %}>
+              <option value="">-- اختر الكلية --</option>
+              {% for c in colleges or [] %}
+                <option value="{{ c }}"
+                  {% if (user and user.college_admin_college and user.college_admin_college|trim == c) %}selected{% endif %}>
+                  {{ c }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="hint">يجب اختيار الكلية من القائمة. لا يمكن تعيين أدمن لكلية غير موجودة.</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="row">
+      <div class="field">
+        {% if role_ctx.get('is_admin') or role_ctx.get('is_college_admin') %}
+        <label class="actions">
+          <input id="is_hod_checkbox" type="checkbox" name="is_hod_f" {% if user and user.is_hod %}checked{% endif %}>
+          <span>رئيس قسم</span>
+        </label>
+        <div id="college_field" style="margin-top:8px; {% if not (user and user.is_hod) %}display:none;{% endif %}">
+          <label><span>الكلية <span style="color:#e00">*</span></span>
+            <select name="hod_college" id="hod_college_select" {% if user and user.is_hod or (is_hod_f or selected_hod_college) %}required{% endif %}>
+              <option value="">-- اختر الكلية --</option>
+              {% for c in colleges or [] %}
+                <option value="{{ c }}"
+                  {% if (user and user.hod_college and user.hod_college|trim == c) 
+ 					or (selected_hod_college and selected_hod_college == c) %}selected{% endif %}>
+                  {{ c }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="hint">يجب اختيار الكلية من القائمة. لا يمكن تعيين رئيس قسم لكلية غير موجودة.</div>
+        </div>
+        <div id="departments_field" style="margin-top:8px; {% if not (user and user.is_hod) %}display:none;{% endif %}">
+          <label><span>القسم <span style="color:#e00">*</span></span>
+            <select name="head_user_department_id" id="department_select" {% if user and user.is_hod or (is_hod_f or selected_hod_college) %}required{% endif %}>
+              <option value="">-- اختر القسم --</option>
+              {% for dept in departments or [] %}
+                <option value="{{ dept.id }}"
+                  {% if user and user.headed_departments and dept.id in user.headed_departments|map(attribute='id')|list %}selected{% endif %}
+                  data-college="{{ dept.college|trim }}">
+                  {{ dept.college }} - {{ dept.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="hint">يجب اختيار القسم من القائمة. لا يمكن تعيين رئيس قسم لقسم غير موجود.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label class="actions">
+          <input type="checkbox" name="is_doc_f" id="is_doc_checkbox" {% if user and user.is_doc %}checked{% endif %}{% if role_ctx.get('is_hod') and mode=='create' %} checked{% endif %}>
+          <span>طبيب</span>
+        </label>
+        <div class="hint">رخصة الطبيب تمنح صلاحيات العيادة والصيدلية والمخزون.</div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn btn-primary" type="submit">حفظ</button>
+      <a class="btn btn-secondary" href="/admin/users">رجوع لقائمة المستخدمين</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  // إظهار/إخفاء حقول الكلية والأقسام حسب اختيار "رئيس قسم"
+  const hodCheckbox = document.getElementById('is_hod_checkbox');
+  const collegeField = document.getElementById('college_field');
+  const departmentsField = document.getElementById('departments_field');
+  const collegeSelect = document.getElementById('hod_college_select');
+  const departmentSelect = document.getElementById('department_select');
+  
+  function filterDepartmentsByCollege() {
+    const selectedCollege = collegeSelect ? collegeSelect.value.trim() : '';
+    if (!departmentSelect) return;
+    
+    const options = departmentSelect.querySelectorAll('option');
+    options.forEach(opt => {
+      if (opt.value === '') {
+        opt.style.display = 'block';
+        return;
+      }
+      const optCollege = opt.getAttribute('data-college') || '';
+      if (selectedCollege && optCollege !== selectedCollege) {
+        opt.style.display = 'none';
+      } else {
+        opt.style.display = 'block';
+      }
+    });
+    
+    // إعادة تعيين القيمة إذا كانت غير مرئية
+    if (departmentSelect.value && departmentSelect.options[departmentSelect.selectedIndex].style.display === 'none') {
+      departmentSelect.value = '';
+    }
+  }
+  
+  if (hodCheckbox) {
+    hodCheckbox.addEventListener('change', function() {
+      const isChecked = this.checked;
+      if (collegeField) collegeField.style.display = isChecked ? 'block' : 'none';
+      if (departmentsField) departmentsField.style.display = isChecked ? 'block' : 'none';
+      if (!isChecked) {
+        if (collegeSelect) collegeSelect.value = "";
+        if (departmentSelect) departmentSelect.value = "";
+      }
+    });
+  }
+  
+  if (collegeSelect) {
+    collegeSelect.addEventListener('change', filterDepartmentsByCollege);
+  }
+  
+  // تصفية الأقسام عند تحميل الصفحة
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', filterDepartmentsByCollege);
+  } else {
+    filterDepartmentsByCollege();
+  }
+  
+  // إظهار/إخفاء حقل الكلية لأدمن الكلية
+  const collegeAdminCheckbox = document.getElementById('is_college_admin_checkbox');
+  const collegeAdminField = document.getElementById('college_admin_field');
+  const collegeAdminSelect = document.getElementById('college_admin_select');
+  const adminCheckbox = document.getElementById('is_admin_checkbox');
+  
+  if (collegeAdminCheckbox) {
+    collegeAdminCheckbox.addEventListener('change', function() {
+      if (collegeAdminField) {
+        collegeAdminField.style.display = this.checked ? 'block' : 'none';
+        if (!this.checked && collegeAdminSelect) {
+          collegeAdminSelect.value = "";
+        }
+      }
+      // إذا تم تفعيل أدمن الكلية، إلغاء تفعيل سوبر أدمن
+      if (this.checked && adminCheckbox) {
+        adminCheckbox.checked = false;
+      }
+    });
+  }
+  
+  if (adminCheckbox) {
+    adminCheckbox.addEventListener('change', function() {
+      // إذا تم تفعيل سوبر أدمن، إلغاء تفعيل أدمن الكلية
+      if (this.checked && collegeAdminCheckbox) {
+        collegeAdminCheckbox.checked = false;
+        if (collegeAdminField) collegeAdminField.style.display = 'none';
+        if (collegeAdminSelect) collegeAdminSelect.value = "";
+      }
+    });
+  }
+</script>
+
+{% endblock %}

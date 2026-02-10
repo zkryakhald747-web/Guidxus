@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>التحقّق من الشهادة</title>
+<style>
+  :root{
+    --blue:#0f7d89; --green:#2bb9a6; --ink:#0b2b33; --muted:#6f8a96;
+    --paper:#ffffff; --bg:#f4fafb; --line:#e4eff1;
+    --ok:#14b8a6; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:
+      radial-gradient(900px 500px at 10% -10%, rgba(43,185,166,.08), transparent 60%),
+      radial-gradient(700px 500px at 110% 110%, rgba(15,125,137,.10), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Tahoma","Segoe UI",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+
+  /* شريط علوي نحيف */
+  .bar{
+    background:linear-gradient(90deg,var(--blue),var(--green));
+    height:6px; width:100%;
+  }
+
+  /* حاوية الصفحة */
+  .wrap{width:min(1020px,96%); margin-inline:auto; padding:22px 0 40px;}
+
+  /* بطاقة الشهادة */
+  .card{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:
+      0 18px 60px rgba(15,125,137,.18),
+      0 1px 0 rgba(255,255,255,.8) inset;
+  }
+
+  /* شريط عنوان أنيق */
+  .head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:18px 22px;
+    background:
+      linear-gradient(180deg, rgba(15,125,137,.10), rgba(15,125,137,0));
+    border-bottom:1px solid var(--line);
+  }
+  .title{margin:0; font-weight:900; letter-spacing:.2px}
+  .ribbon{
+    display:inline-flex; align-items:center; gap:10px; color:#0a2b31;
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:.5rem .9rem; box-shadow:0 8px 24px rgba(0,0,0,.08);
+    font-weight:900;
+  }
+  .state-ok::before{content:"✅"; margin-inline-start:.2rem}
+  .state-bad::before{content:"❌"; margin-inline-start:.2rem}
+
+  /* جسم البطاقة */
+  .body{
+    display:grid; grid-template-columns: 340px 1fr; gap:0;
+  }
+  @media (max-width: 900px){ .body{ grid-template-columns: 1fr; } }
+
+  /* عمود QR */
+  .qr-pane{
+    padding:22px; border-inline-end:1px solid var(--line);
+    display:grid; gap:16px;
+    background:linear-gradient(180deg,#ffffff, #fbfeff);
+  }
+  @media (max-width: 900px){ .qr-pane{ border-inline-end:none; border-bottom:1px solid var(--line);} }
+  .qr-box{
+    border:1px solid var(--line); border-radius:18px; background:#fff; padding:16px;
+    box-shadow:0 16px 38px rgba(15,125,137,.12);
+    display:grid; place-items:center;
+  }
+  .qr{
+    inline-size:min(260px,70vw); block-size:min(260px,70vw); object-fit:contain;
+    border-radius:12px; border:1px solid #e8f0f2; background:#fff;
+  }
+  .code-chip{
+    display:flex; align-items:center; gap:8px; justify-content:center; flex-wrap:wrap;
+    padding:.6rem .8rem; border-radius:12px; background:#f1fbfc; color:#0a2f37;
+    border:1px solid var(--line); font-weight:900;
+  }
+  .copy{
+    appearance:none; border:none; cursor:pointer; font-weight:900;
+    padding:.35rem .65rem; border-radius:10px; background:linear-gradient(180deg,var(--green),var(--blue));
+    color:#fff; box-shadow:0 10px 20px rgba(15,125,137,.18);
+  }
+
+  /* عمود التفاصيل */
+  .details{ padding:22px 22px 26px; }
+  .section{ margin-bottom:18px; }
+  .sec-title{
+    margin:0 0 10px; font-weight:900; color:#0a2b31; display:flex; align-items:center; gap:8px;
+  }
+  .sec-title i{
+    inline-size:10px; block-size:10px; border-radius:50%; background:var(--green);
+    box-shadow:0 0 0 6px rgba(43,185,166,.14);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: 170px 1fr;
+    gap:12px 16px;
+  }
+  @media (max-width: 560px){ .grid{ grid-template-columns:1fr; } }
+  .k{ color:var(--muted); font-weight:800 }
+  .v{ color:#0a2b31; font-weight:900; word-break:break-word }
+
+  /* خط زمني للتواريخ */
+  .timeline{
+    margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  }
+  @media (max-width:560px){ .timeline{ grid-template-columns:1fr; } }
+  .step{
+    background:#f7fbfc; border:1px dashed var(--line); border-radius:14px; padding:14px;
+  }
+  .step h4{ margin:0 0 6px; font-size:.95rem; color:#0a2b31; font-weight:900 }
+  .dt{ font-weight:900; letter-spacing:.3px }
+
+  /* تذييل البطاقة */
+  .foot{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    padding:14px 22px; border-top:1px solid var(--line); background:#fbfeff;
+  }
+  .brand-mini{
+    display:flex; align-items:center; gap:10px; color:#0a2f37; font-weight:900;
+  }
+  .print{
+    appearance:none; border:1px solid var(--line); background:#fff; color:#0b2f36; cursor:pointer;
+    padding:.55rem .9rem; border-radius:12px; font-weight:900;
+  }
+
+  /* حالة غير صالحة */
+  .empty{
+    width:min(720px, 96%); margin:28px auto; background:#fff; border:1px solid var(--line);
+    border-radius:22px; padding:40px 22px; text-align:center;
+    box-shadow:0 18px 50px rgba(15,125,137,.12);
+  }
+  .bigx{
+    inline-size:86px; block-size:86px; border-radius:22px; margin:0 auto 16px;
+    display:grid; place-items:center; font-size:38px; color:#b91c1c;
+    background:#fef2f2; border:1px solid #fecaca;
+    box-shadow:0 16px 34px rgba(185,28,28,.15);
+  }
+  .empty h2{ margin:0 0 6px; font-weight:900 }
+  .empty .code{ color:#7b8f98; font-weight:900 }
+</style>
+</head>
+<body>
+
+<div class="bar" aria-hidden="true"></div>
+
+<div class="wrap">
+  {% if ok %}
+  <article class="card" aria-label="بطاقة التحقق من الشهادة">
+    <header class="head">
+      <h1 class="title">التحقّق من الشهادة</h1>
+      <span class="ribbon state-ok">الشهادة صالحة</span>
+    </header>
+
+    <section class="body">
+      
+      <aside class="qr-pane">
+        <div class="qr-box">
+          <img class="qr" src="{{ (data.barcode_path or ('/static/barcodes/' ~ code ~ '.png')) }}" alt="رمز QR للتحقق">
+        </div>
+        <div class="code-chip">
+          <span>رقم الشهادة:</span>
+          <span>{{ code }}</span>
+          <button class="copy" onclick="copyCode('{{ code }}')">نسخ</button>
+        </div>
+      </aside>
+
+      
+      <div class="details">
+        
+        <section class="section">
+          <h3 class="sec-title"><i></i>بيانات المتدرب والدورة</h3>
+          <div class="grid">
+            <div class="k">اسم المتدرب</div>
+            <div class="v">{{ data.trainee_name }}</div>
+
+            <div class="k">الرقم التدريبي</div>
+            <div class="v">{{ data.trainee_no }}</div>
+
+            <div class="k">مسمى الدورة</div>
+            <div class="v">{{ data.course_title }}</div>
+
+            <div class="k">عدد الساعات</div>
+            <div class="v">{{ data.hours or '-' }} ساعة</div>
+
+            <div class="k">نسخة الشهادة</div>
+            <div class="v">{{ data.copy_no or '1' }}</div>
+          </div>
+        </section>
+
+        
+        {% set start_txt = (data.start_date.strftime('%d-%m-%Y') if data.start_date and data.start_date.strftime is not undefined else (data.start_date or '')) %}
+        {% set end_txt   = (data.end_date.strftime('%d-%m-%Y')   if data.end_date   and data.end_date.strftime   is not undefined else (data.end_date   or '')) %}
+
+        <section class="timeline">
+          <div class="step">
+            <h4>تاريخ البداية</h4>
+            <div class="dt">{{ start_txt }}</div>
+          </div>
+          <div class="step">
+            <h4>تاريخ النهاية</h4>
+            <div class="dt">{{ end_txt }}</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="brand-mini">GUIDXUS • TVTC</div>
+      <button class="print" onclick="window.print()">طباعة</button>
+    </footer>
+  </article>
+
+  {% else %}
+  <section class="empty" role="alert">
+    <div class="bigx">✕</div>
+    <h2>الشهادة غير موجودة أو غير صالحة</h2>
+    <div class="code">{{ code }}</div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+  function copyCode(text){
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const t = document.createElement('textarea');
+      t.value = text; document.body.appendChild(t);
+      t.select(); document.execCommand('copy'); document.body.removeChild(t);
+    }
+  }
+</script>
+</body>
+</html>

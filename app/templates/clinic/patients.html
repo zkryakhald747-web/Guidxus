@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block breadcrumb %}العيادة الطبية › الملف الطبي{% endblock %}
+{% block content %}
+
+{# ماكرو لتنظيف رقم الهوية من أي فواصل أو كسور عشرية #}
+{% macro id_clean(v) -%}
+  {{ ('' ~ v).replace(',', '').split('.')[0] }}
+{%- endmacro %}
+
+<div class="card" dir="rtl">
+  <div class="card-head">
+    <span class="card-icon">🧑‍⚕️</span>
+    <h3>الملف الطبي للمراجع</h3>
+  </div>
+
+  {% if msg == 'profile_saved' %}
+    <div class="alert alert-success">تم حفظ الملف الطبي بنجاح.</div>
+  {% endif %}
+  {% if msg == 'profile_updated' %}
+    <div class="alert alert-success">تم تحديث الملف الطبي بنجاح.</div>
+  {% endif %}
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="actions" style="margin-bottom:10px">
+    <a class="btn {% if tab=='create' %}btn-primary{% else %}btn-secondary{% endif %}" href="/clinic/patients?tab=create">إنشاء/إدارة ملف</a>
+    <a class="btn {% if tab=='search' %}btn-primary{% else %}btn-secondary{% endif %}" href="/clinic/patients?tab=search">بحث عن ملف</a>
+  </div>
+
+  {% if tab == 'create' %}
+    
+    <form class="form" method="get" action="/clinic/patients">
+      <input type="hidden" name="tab" value="create">
+      <div class="grid">
+        <label>نوع المراجع
+          {% set selected_type = prefill.patient_type if prefill and prefill.patient_type else (selected_patient_type or 'trainee') %}
+          <select name="patient_type" id="patient_type" onchange="togglePatientForms()">
+            <option value="trainee" {% if selected_type=='trainee' %}selected{% endif %}>متدرب</option>
+            <option value="employee" {% if selected_type=='employee' %}selected{% endif %}>موظف</option>
+          </select>
+        </label>
+      </div>
+
+      
+      <div id="form_trainee" style="margin-top:8px;">
+        <div class="grid">
+          <label>الرقم التدريبي
+            <input type="text" name="trainee_no" placeholder="مثال: 123456" value="{{ prefill.trainee_no if prefill }}">
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary">تحقّق / جلب</button>
+          <a class="btn" href="/clinic/patients?tab=create">تفريغ</a>
+        </div>
+      </div>
+    </form>
+
+    {# === وضع تعديل الملف الطبي === #}
+    {% if edit_profile %}
+    <hr>
+    <div class="alert alert-info">تعديل الملف الطبي (البيانات الأساسية): يمكنك تعديل <strong>رقم الجوال</strong> و<strong>تاريخ الميلاد</strong> فقط.</div>
+
+    <form class="form" method="post" action="/clinic/patients/update_profile">
+      <input type="hidden" name="patient_key" value="{{ edit_profile.patient_key }}">
+
+      <div class="grid">
+        <label>الاسم
+          <input type="text" value="{{ edit_profile.full_name }}" readonly>
+        </label>
+
+        {% if edit_profile.patient_type == 'trainee' %}
+        <label>الرقم التدريبي
+          <input type="text" value="{{ edit_profile.trainee_no }}" readonly>
+        </label>
+        <label>رقم الهوية
+          <input type="text" value="{{ id_clean(edit_profile.national_id) }}" readonly>
+        </label>
+        <label>التخصص
+          <input type="text" value="{{ edit_profile.major or '' }}" readonly>
+        </label>
+        <label>الكلية
+          <input type="text" value="{{ edit_profile.college or '' }}" readonly>
+        </label>
+        {% else %}
+        <label>الرقم الوظيفي
+          <input type="text" value="{{ edit_profile.employee_no }}" readonly>
+        </label>
+        <label>رقم الهوية
+          <input type="text" value="{{ id_clean(edit_profile.national_id) }}" readonly>
+        </label>
+        {% endif %}
+
+        <label>رقم الجوال (قابل للتعديل)
+          <input type="text" name="mobile" value="{{ edit_profile.mobile or '' }}" placeholder="05xxxxxxxx">
+        </label>
+
+        <label>تاريخ الميلاد (قابل للتعديل)
+          <input type="date" name="birth_date" value="{{ edit_profile.birth_date or '' }}">
+        </label>
+      </div>
+
+      <div class="actions" style="margin-top:10px">
+        <button class="btn btn-primary">حفظ التعديلات</button>
+        <a class="btn btn-secondary" href="/clinic/visits/new?patient_key={{ edit_profile.patient_key|urlencode }}">بدء زيارة الآن</a>
+      </div>
+    </form>
+    {% endif %}
+
+    {# === إنشاء ملف متدرب جديد (بعد جلب sf01) === #}
+    {% if prefill and selected_type=='trainee' %}
+    <hr>
+    <div class="alert alert-success">تم جلب البيانات من قاعدة البيانات بنجاح </div>
+
+    <form class="form" method="post" action="/clinic/patients/create">
+      <input type="hidden" name="patient_type" value="trainee">
+      <input type="hidden" name="trainee_no"   value="{{ prefill.trainee_no }}">
+      <input type="hidden" name="full_name"    value="{{ prefill.full_name }}">
+      {# ننظف الهوية قبل تمريرها وحفظها #}
+      <input type="hidden" name="national_id"  value="{{ id_clean(prefill.national_id) }}">
+      <input type="hidden" name="major"        value="{{ prefill.major }}">
+      <input type="hidden" name="college"      value="{{ prefill.college }}">
+
+      <div class="grid">
+        <label>الاسم (من sf01)
+          <input type="text" value="{{ prefill.full_name }}" readonly>
+        </label>
+        <label>الرقم التدريبي
+          <input type="text" value="{{ prefill.trainee_no }}" readonly>
+        </label>
+        <label>رقم الهوية الوطنية
+          <input type="text" value="{{ id_clean(prefill.national_id) }}" readonly>
+        </label>
+        <label>التخصص
+          <input type="text" value="{{ prefill.major }}" readonly>
+        </label>
+        <label>الكلية
+          <input type="text" value="{{ prefill.college }}" readonly>
+        </label>
+        <label>رقم الجوال (قابل للتعديل)
+          <input type="text" name="mobile" value="{{ prefill.mobile or '' }}" placeholder="05xxxxxxxx">
+        </label>
+        <label>تاريخ الميلاد (اختياري)
+          <input type="date" name="birth_date" value="{{ prefill.birth_date or '' }}">
+        </label>
+      </div>
+
+      <div class="actions" style="margin-top:10px">
+        <button class="btn btn-primary">حفظ الملف الطبي</button>
+        <a class="btn btn-secondary" href="/clinic/visits/new?patient_key=T:{{ prefill.trainee_no }}">بدء زيارة الآن</a>
+      </div>
+    </form>
+    {% endif %}
+
+    
+    <div id="form_employee" style="margin-top:8px; display:none;">
+      <form class="form" method="post" action="/clinic/patients/create">
+        <input type="hidden" name="patient_type" value="employee">
+        <div class="grid">
+          <label>الرقم الوظيفي
+            <input type="text" name="employee_no" placeholder="مثال: 1001">
+          </label>
+          <label>الاسم
+            <input type="text" name="emp_full_name" placeholder="الاسم الثلاثي">
+          </label>
+          <label>رقم الهوية الوطنية
+            <input type="text" name="emp_national_id" placeholder="10 أرقام">
+          </label>
+          <label>رقم الجوال
+            <input type="text" name="emp_mobile" placeholder="05xxxxxxxx">
+          </label>
+          <label>القسم/الإدارة (اختياري)
+            <input type="text" name="department" placeholder="مثال: الشؤون الإدارية">
+          </label>
+          <label>تاريخ الميلاد (اختياري)
+            <input type="date" name="birth_date">
+          </label>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button class="btn btn-primary">حفظ الملف الطبي</button>
+        </div>
+      </form>
+    </div>
+
+  {% elif tab == 'search' %}
+    <form class="form" method="get" action="/clinic/patients">
+      <input type="hidden" name="tab" value="search">
+      <div class="grid">
+        <label>ابحث برقم تدريبي/وظيفي/هوية/اسم
+          <input type="text" name="q" value="{{ q or '' }}" placeholder="مثال: 123456 أو 1xxxxxxxxx أو أحمد">
+        </label>
+      </div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn btn-primary">بحث</button>
+        <a class="btn btn-secondary" href="/clinic/patients?tab=search">تفريغ</a>
+      </div>
+    </form>
+
+    {% if results %}
+      <div class="list-wrap">
+        {% for r in results %}
+          <div class="person-card">
+            <div class="pc-header">
+              <div class="pc-title">
+                <span class="pc-name">{{ r.full_name }}</span>
+                {% set isT = (r.patient_type or '') == 'trainee' %}
+                <span class="pc-badge {{ 'pc-badge--trainee' if isT else 'pc-badge--employee' }}">
+                  {{ 'متدرب' if isT else 'موظف' }}
+                </span>
+              </div>
+              <div class="pc-meta">
+                <span>النوع: {{ 'متدرب' if isT else 'موظف' }}</span>
+                <span>·</span>
+                <span>الرقم: {{ r.trainee_no or r.employee_no }}</span>
+                {% if r.mobile %}<span>·</span><span>الجوال: {{ r.mobile }}</span>{% endif %}
+              </div>
+              {% if r.major or r.college %}
+                <div class="pc-meta">
+                  {% if r.major %}<span>التخصص: {{ r.major }}</span>{% endif %}
+                  {% if r.college %}<span> — الكلية: {{ r.college }}</span>{% endif %}
+                </div>
+              {% endif %}
+
+              <div class="pc-meta">
+                {% set lv = r.last_visit_at %}
+                <span>آخر زيارة:
+                  {% if lv.__class__.__name__ in ['datetime','date'] %}
+                    {{ lv.strftime('%Y-%m-%d - %H:%M') }}
+                  {% else %}
+                    {{ (lv | replace('T',' ') | replace('+03:00','') | replace('+00:00',''))[:16] if lv }}
+                  {% endif %}
+                </span>
+                <span>·</span>
+                <span>عدد الزيارات: {{ r.visit_count or 0 }}</span>
+              </div>
+            </div>
+
+            <div class="pc-actions">
+              <a class="btn btn-secondary" href="/clinic/visits/new?patient_key={{ r.patient_key|urlencode }}">بدء زيارة</a>
+              <a class="btn" href="/clinic/patients?tab=create&mode=edit&patient_key={{ r.patient_key|urlencode }}">تعديل الملف</a>
+            </div>
+
+            {% if r.visits and r.visits|length %}
+              <div class="pc-visits">
+                <div class="pc-visits-title">زيارات سابقة <small>(قراءة فقط)</small> 🗒️</div>
+                <ul class="timeline">
+                  {% for v in r.visits %}
+                    <li class="timeline-item">
+                      <details class="tl-accordion" {% if loop.first %}open{% endif %}>
+                        <summary class="tl-summary">
+                          <span class="tl-date">
+                            {% if v.visit_at.__class__.__name__ in ['datetime','date'] %}
+                              {{ v.visit_at.strftime('%Y-%m-%d - %H:%M') }}
+                            {% else %}
+                              {{ (v.visit_at | replace('T',' ') | replace('+03:00','') | replace('+00:00',''))[:16] if v.visit_at }}
+                            {% endif %}
+                          </span>
+                          <span class="tl-key">{{ r.patient_key }}</span>
+                          <span class="tl-caret" aria-hidden="true">▾</span>
+                        </summary>
+
+                        <div class="tl-body">
+                          {% set rj = v.rec_json or {} %}
+
+                          {% if v.complaint %}<div><strong>الشكوى:</strong> {{ v.complaint }}</div>{% endif %}
+                          {% if v.diagnosis %}<div><strong>التشخيص:</strong> {{ v.diagnosis }}</div>{% endif %}
+
+                          {% if v.temp_c or v.bp_systolic or v.bp_diastolic or v.pulse_bpm or v.resp_rpm %}
+                            <div class="tl-vitals muted">
+                              <span>العلامات الحيوية:</span>
+                              {% if v.temp_c %}<span>حرارة {{ '%.1f'|format(v.temp_c) }}°C</span>{% endif %}
+                              {% if v.bp_systolic and v.bp_diastolic %}<span>— ضغط {{ v.bp_systolic }}/{{ v.bp_diastolic }}</span>{% endif %}
+                              {% if v.pulse_bpm %}<span>— نبض {{ v.pulse_bpm }} bpm</span>{% endif %}
+                              {% if v.resp_rpm %}<span>— تنفس {{ v.resp_rpm }} rpm</span>{% endif %}
+                            </div>
+                          {% endif %}
+
+                          {% if v.notes %}
+                            <div class="tl-notes"><strong>ملاحظات:</strong> {{ v.notes }}</div>
+                          {% endif %}
+
+                          {% if v.rec_json %}
+                            <div class="tl-rec muted">
+                              <strong>التوصية:</strong>
+                              {% if rj.type == 'rest' %}
+                                راحة ({{ rj.days }} يوم)
+                              {% elif rj.type == 'referral' %}
+                                إحالة: {{ rj.to }} — السبب: {{ rj.summary }}
+                              {% else %}
+                                لا يوجد
+                              {% endif %}
+                            </div>
+                          {% endif %}
+
+                          {# ===== أزرار طباعة الإجازة / الإحالة حسب التوصية ===== #}
+                          <div class="visit-print-actions">
+                            {% if rj.type == 'rest' and rj.days and v.id %}
+                              <a class="btn-print" href="/clinic/reports/rest_notice/by_visit?visit_id={{ v.id }}"
+                                 target="_blank" rel="noopener">🖨️ طباعة الإجازة</a>
+                            {% endif %}
+                            {% if rj.type == 'referral' and rj.to and v.id %}
+                              <a class="btn-print" href="/clinic/reports/referral_notice/by_visit?visit_id={{ v.id }}"
+                                 target="_blank" rel="noopener">🖨️ طباعة الإحالة</a>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </details>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% elif q %}
+      <div class="card" style="margin-top:12px">
+        <div class="card-head"><span class="card-icon">🔎</span><h3>نتائج البحث</h3></div>
+        <p class="muted">لا توجد نتائج مطابقة للمدخل: <strong>{{ q }}</strong></p>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+{# ===== Modal عند وجود ملف سابق: تعديل/زيارة ===== #}
+{% if confirm == 'profile_found' and confirm_patient_key %}
+<div id="exist-modal" class="x-modal is-open" role="dialog" aria-modal="true" aria-labelledby="exist-title">
+  <div class="x-modal__backdrop"></div>
+  <div class="x-modal__dialog">
+    <div class="x-modal__header">
+      <h3 id="exist-title">المراجع مسجّل مسبقًا</h3>
+    </div>
+    <div class="x-modal__body">
+      <p>
+        بيانات <strong>{{ confirm_name or 'المراجع' }}</strong> موجودة في النظام.
+        ماذا تود أن تفعل؟
+      </p>
+    </div>
+    <div class="x-modal__footer">
+      <a class="btn btn-primary" href="/clinic/visits/new?patient_key={{ confirm_patient_key|urlencode }}&msg=continue_existing">بدء زيارة جديدة</a>
+      <a class="btn" href="/clinic/patients?tab=create&mode=edit&patient_key={{ confirm_patient_key|urlencode }}">تعديل الملف الطبي</a>
+      <a class="btn btn-secondary" href="/clinic/patients?tab=create">إلغاء</a>
+    </div>
+  </div>
+</div>
+<style>
+  .x-modal{display:none}
+  .x-modal.is-open{display:block;position:fixed;inset:0;z-index:9999}
+  .x-modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+  .x-modal__dialog{
+    position:relative;max-width:540px;margin:10vh auto;background:#fff;border-radius:12px;overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);direction:rtl
+  }
+  .x-modal__header,.x-modal__footer{padding:14px 18px;background:#f7f8fa}
+  .x-modal__body{padding:16px 18px}
+  .x-modal__header h3{margin:0;font-size:1.15rem}
+  .x-modal__footer{display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap}
+</style>
+{% endif %}
+
+<style>
+  /* === شارة نوع المراجع === */
+  .pc-badge{
+    display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem; line-height:1;
+    margin-inline-start:.5rem; vertical-align:middle; font-weight:700
+  }
+  .pc-badge--trainee{ background:#ecfdf5; color:#047857; border:1px solid #a7f3d0 }
+  .pc-badge--employee{ background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe }
+
+  /* === بطاقة الشخص === */
+  .person-card{
+    border:1px solid #e5e7eb; border-radius:14px; padding:14px 16px; margin-top:12px; background:#fff
+  }
+  .pc-header{ margin-bottom:8px }
+  .pc-title{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+  .pc-name{ font-size:1.15rem; font-weight:800 }
+  .pc-meta{ color:#6b7280; display:flex; gap:.4rem; flex-wrap:wrap; margin-top:4px }
+  .pc-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
+
+  /* === زيارات سابقة (Accordion + Timeline) === */
+  .pc-visits{ margin-top:12px; background:#f9fafb; border:1px solid #eef2f7; border-radius:12px; padding:10px 12px }
+  .pc-visits-title{ font-weight:800; color:#1f2937; margin-bottom:6px }
+  .timeline{ list-style:none; margin:0; padding:0 }
+  .timeline-item{ margin-bottom:10px }
+
+  .tl-accordion{
+    border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+  }
+  .tl-summary{
+    cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px; font-weight:700; color:#374151
+  }
+  .tl-summary::-webkit-details-marker{display:none}
+  .tl-caret{ transition:transform .2s ease }
+  .tl-accordion[open] .tl-caret{ transform:rotate(180deg) }
+
+  .tl-body{ padding:8px 12px 12px; border-top:1px dashed #e5e7eb; color:#374151 }
+  .tl-key{ color:#9ca3af; font-size:.8rem }
+  .tl-vitals, .tl-rec{ margin-top:6px; color:#6b7280 }
+  .tl-notes{ margin-top:6px }
+  .muted{ color:#6b7280 }
+  .list-wrap{ margin-top:12px }
+
+  /* === أزرار الطباعة داخل كل زيارة === */
+  .visit-print-actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap }
+  .btn-print{
+    display:inline-block; padding:6px 10px; border:1px solid #0f7d89; border-radius:8px;
+    text-decoration:none; font-weight:700; color:#0f7d89; background:#e9f7f9;
+  }
+  .btn-print:hover{ background:#d8f1f5; }
+</style>
+
+<script>
+  function togglePatientForms() {
+    var sel = document.getElementById('patient_type');
+    var t = sel ? sel.value : 'trainee';
+    var formT = document.getElementById('form_trainee');
+    var formE = document.getElementById('form_employee');
+    if (formT) formT.style.display = (t === 'trainee') ? 'block' : 'none';
+    if (formE) formE.style.display = (t === 'employee') ? 'block' : 'none';
+  }
+  (function(){ togglePatientForms(); })();
+</script>
+
+{% endblock %}

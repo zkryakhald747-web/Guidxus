@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <span>تسجيل الدخول</span>
+{% endblock %}
+
+{% block content %}
+<section class="card card-prestige" style="max-width:520px;margin:0 auto;">
+  <div class="card-head">
+    <div class="card-icon">🔐</div>
+    <h3>تسجيل الدخول</h3>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger prestige">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/auth/login" class="form prestige-form">
+    {% if next %}
+      <input type="hidden" name="next" value="{{ next }}">
+    {% endif %}
+
+    <label>اسم المستخدم
+      <input type="text" name="username" placeholder="username" required>
+    </label>
+
+    <label>كلمة المرور
+      <input type="password" name="password" placeholder="••••••••" required>
+    </label>
+
+    <div class="actions" style="margin-top:12px;">
+      <button type="submit" class="btn btn-primary btn-prestige">دخول</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

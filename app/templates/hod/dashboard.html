@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> › <span>لوحة رئيس القسم</span>
+{% endblock %}
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🎓</div>
+    <h3>لوحة رئيس القسم</h3>
+  </div>
+  <p class="muted">اختر خدمة للبدء:</p>
+  <div class="card-grid">
+    <a class="card action-card" href="/hod/courses/new">
+      <div class="icon">➕</div>
+      <div class="title">إضافة دورة</div>
+      <div class="desc">إنشاء دورة جديدة وتحديد الأقسام المستهدفة والسعة والسياسات.</div>
+    </a>
+    <a class="card action-card" href="/hod/courses">
+      <div class="icon">📋</div>
+      <div class="title">استعراض الدورات</div>
+      <div class="desc">عرض وإدارة الدورات المنشورة والمسودات وإجراءات المتابعة.</div>
+    </a>
+    <a class="card action-card" href="/hod/certificates/issue">
+      <div class="icon">🎖️</div>
+      <div class="title">تصدير شهادة لمتدرب</div>
+      <div class="desc">ابحث برقم المتدرب واختر دورة مكتملة لإصدار الشهادة.</div>
+    </a>
+    <a class="card action-card" href="/hod/skills-record">
+      <div class="icon">📑</div>
+      <div class="title">سجل المهارات الشخصية</div>
+      <div class="desc">تصدير سجل شامل بالدورات والساعات للمتدرب.</div>
+    </a>
+  </div>
+</section>
+{% endblock %}

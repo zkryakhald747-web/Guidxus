@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+
+{% block title %}ملفي الشخصي{% endblock %}
+
+{% block breadcrumb %}
+<a href="/">الرئيسية</a> / <span>ملفي الشخصي</span>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <div class="avatar-circle">
+                <span class="avatar-text">{{ current_user.full_name|first_letter }}</span>
+            </div>
+            <div class="profile-info">
+                <h1>{{ current_user.full_name }}</h1>
+                <p class="username">@{{ current_user.username }}</p>
+                <div class="user-badges">
+                    {% if current_user.is_admin %}
+                        <span class="badge badge-admin">مدير النظام</span>
+                    {% endif %}
+                    {% if current_user.is_college_admin %}
+                        <span class="badge badge-college-admin">مدير الكلية</span>
+                    {% endif %}
+                    {% if current_user.is_hod %}
+                        <span class="badge badge-hod">رئيس القسم</span>
+                    {% endif %}
+                    {% if current_user.is_doc %}
+                        <span class="badge badge-doc">طبيب الكلية</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <div class="profile-tabs">
+            <button class="tab-button active" onclick="showTab('profile')">البيانات الشخصية</button>
+            <button class="tab-button" onclick="showTab('security')">الأمان</button>
+        </div>
+
+        
+        <div id="profile-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h3>📝 تعديل البيانات الشخصية</h3>
+                </div>
+                <div class="card-body">
+                    {% if success %}
+                        <div class="alert alert-success">{{ success }}</div>
+                    {% endif %}
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="post" action="/profile/update-profile">
+                        <div class="form-group">
+                            <label for="username">اسم المستخدم</label>
+                            <input type="text" id="username" value="{{ current_user.username }}" disabled class="form-control disabled">
+                            <small class="form-text">لا يمكن تغيير اسم المستخدم</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="full_name">الاسم الكامل</label>
+                            <input type="text" id="full_name" name="full_name" value="{{ current_user.full_name }}" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>نوع الحساب</label>
+                            <div class="account-type">
+                                {% if current_user.is_admin %}
+                                    <span>مدير النظام</span>
+                                {% elif current_user.is_college_admin %}
+                                    <span>مدير الكلية - {{ current_user.college_admin_college or 'غير محدد' }}</span>
+                                {% elif current_user.is_hod %}
+                                    <span>رئيس القسم - {{ current_user.hod_college or 'غير محدد' }}</span>
+                                {% elif current_user.is_doc %}
+                                    <span>طبيب الكلية</span>
+                                {% else %}
+                                    <span>مستخدم عادي</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                💾 حفظ التغييرات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        
+        <div id="security-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔐 تغيير كلمة المرور</h3>
+                </div>
+                <div class="card-body">
+                    {% if success and request.url.path == '/profile/change-password' %}
+                        <div class="alert alert-success">{{ success }}</div>
+                    {% endif %}
+                    {% if error and request.url.path == '/profile/change-password' %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="post" action="/profile/change-password">
+                        <div class="form-group">
+                            <label for="current_password">كلمة المرور الحالية</label>
+                            <input type="password" id="current_password" name="current_password" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="new_password">كلمة المرور الجديدة</label>
+                            <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6">
+                            <small class="form-text">يجب أن تكون 6 أحرف على الأقل</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirm_password">تأكيد كلمة المرور الجديدة</label>
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                        </div>
+
+                        <div class="password-strength" id="password-strength" style="display: none;">
+                            <div class="strength-bar">
+                                <div class="strength-fill" id="strength-fill"></div>
+                            </div>
+                            <span class="strength-text" id="strength-text"></span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                🔒 تغيير كلمة المرور
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="security-tips">
+                <h4>💡 نصائح لكلمة مرور قوية:</h4>
+                <ul>
+                    <li>استخدم مزيجاً من الأحرف الكبيرة والصغيرة</li>
+                    <li>أضف أرقاماً ورموزاً خاصة</li>
+                    <li>تجنب استخدام معلومات شخصية</li>
+                    <li>اجعل كلمة المرور 8 أحرف على الأقل</li>
+                    <li>لا تستخدم نفس كلمة المرور في أكثر من موقع</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* تصميم احترافي للبروفايل */
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.profile-avatar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+}
+
+.avatar-text {
+    color: white;
+}
+
+.profile-info h1 {
+    margin: 0 0 5px 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.username {
+    margin: 0 0 15px 0;
+    opacity: 0.8;
+    font-size: 14px;
+}
+
+.user-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-admin { background: #ff6b6b; color: white; }
+.badge-college-admin { background: #4ecdc4; color: white; }
+.badge-hod { background: #45b7d1; color: white; }
+.badge-doc { background: #96ceb4; color: white; }
+
+.profile-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    border: none;
+    background: none;
+    color: #6c757d;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-button:hover {
+    color: #667eea;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control.disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.account-type {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.form-actions {
+    margin-top: 25px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.security-tips {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.security-tips h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+}
+
+.security-tips ul {
+    margin: 0;
+    padding-right: 20px;
+}
+
+.security-tips li {
+    margin-bottom: 8px;
+    color: #6c757d;
+}
+
+.password-strength {
+    margin: 15px 0;
+}
+
+.strength-bar {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-fill {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-text {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: none;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* تأثيرات إضافية */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-container {
+    animation: fadeIn 0.5s ease;
+}
+</style>
+
+<script>
+// دوال التبويبات
+function showTab(tabName) {
+    // إخفاء جميع التبويبات
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // إلغاء تفعيل جميع الأزرار
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // إظهار التبويب المطلوب
+    document.getElementById(tabName + '-tab').classList.add('active');
+    
+    // تفعيل الزر المطلوب
+    event.target.classList.add('active');
+}
+
+// التحقق من قوة كلمة المرور
+document.getElementById('new_password').addEventListener('input', function() {
+    const password = this.value;
+    const strengthDiv = document.getElementById('password-strength');
+    const strengthFill = document.getElementById('strength-fill');
+    const strengthText = document.getElementById('strength-text');
+    
+    if (password.length === 0) {
+        strengthDiv.style.display = 'none';
+        return;
+    }
+    
+    strengthDiv.style.display = 'block';
+    
+    // حساب قوة كلمة المرور
+    let strength = 0;
+    
+    if (password.length >= 6) strength++;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z\d]/.test(password)) strength++;
+    
+    // تحديث شريط القوة
+    if (strength <= 2) {
+        strengthFill.style.width = '33%';
+        strengthFill.style.background = '#dc3545';
+        strengthText.textContent = 'ضعيفة';
+        strengthText.style.color = '#dc3545';
+    } else if (strength <= 3) {
+        strengthFill.style.width = '66%';
+        strengthFill.style.background = '#ffc107';
+        strengthText.textContent = 'متوسطة';
+        strengthText.style.color = '#ffc107';
+    } else {
+        strengthFill.style.width = '100%';
+        strengthFill.style.background = '#28a745';
+        strengthText.textContent = 'قوية';
+        strengthText.style.color = '#28a745';
+    }
+});
+
+// التحقق من تطابق كلمات المرور
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = this.value;
+    
+    if (confirmPassword.length > 0) {
+        if (newPassword !== confirmPassword) {
+            this.style.borderColor = '#dc3545';
+        } else {
+            this.style.borderColor = '#28a745';
+        }
+    } else {
+        this.style.borderColor = '#e9ecef';
+    }
+});
+</script>
+{% endblock %}

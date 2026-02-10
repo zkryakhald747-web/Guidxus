@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block breadcrumb %}العيادة الطبية{% endblock %}
+{% block content %}
+
+<div class="stats-section" style="margin-bottom: 24px;">
+  <h3 style="color:#0e6a74; margin-bottom:8px;">🏥 إحصائيات العيادة</h3>
+  <table class="stats-table" style="width:100%; background:#f7fbfc; border-radius:10px; border:1px solid #e6f0f2; text-align:center;">
+    <tr>
+      <th>الأطباء</th>
+      <th>المراجعين</th>
+      <th>الإحالات</th>
+      <th>الإجازات</th>
+    </tr>
+    <tr>
+      <td>{{ stats.doctors }}</td>
+      <td>{{ stats.visits }}</td>
+      <td>{{ stats.referrals }}</td>
+      <td>{{ stats.leaves }}</td>
+    </tr>
+  </table>
+</div>
+
+
+<div class="stats-section" style="margin-bottom: 24px;">
+  <h3 style="color:#0e6a74; margin-bottom:8px;">💊 إحصائيات الصيدلية</h3>
+  <table class="stats-table" style="width:100%; background:#f7fbfc; border-radius:10px; border:1px solid #e6f0f2; text-align:center;">
+    <tr>
+      <th>الأدوية النشطة</th>
+      <th>إجمالي المخزون</th>
+      <th>الحركات</th>
+    </tr>
+    <tr>
+      <td>{{ stats.pharmacy_drugs }}</td>
+      <td>{{ stats.pharmacy_stock }}</td>
+      <td>{{ stats.pharmacy_movements }}</td>
+    </tr>
+  </table>
+</div>
+
+
+<div class="stats-section" style="margin-bottom: 24px;">
+  <h3 style="color:#0e6a74; margin-bottom:8px;">🧰 إحصائيات صناديق الإسعافات</h3>
+  <table class="stats-table" style="width:100%; background:#f7fbfc; border-radius:10px; border:1px solid #e6f0f2; text-align:center;">
+    <tr>
+      <th>عدد الصناديق</th>
+      <th>إجمالي المحتويات</th>
+    </tr>
+    <tr>
+      <td>{{ stats.first_aid_boxes }}</td>
+      <td>{{ stats.first_aid_items }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="card-icon">🏥</span><h3>لوحة العيادة</h3></div>
+
+  <div class="card-grid">
+    
+    <a class="action-card card" href="/clinic/patients">
+      <div class="icon">🧑‍⚕️</div>
+      <div class="title">الملف الطبي</div>
+      <div class="desc">بحث برقم المتدرب أو الموظف وعرض السجل</div>
+    </a>
+
+    
+    <a class="action-card card" href="/clinic/visits">
+      <div class="icon">📄</div>
+      <div class="title">سجل الزيارات</div>
+      <div class="desc">فلاتر يومي/أسبوعي/شهري</div>
+    </a>
+
+    
+    <a class="action-card card" href="/clinic/prescriptions">
+      <div class="icon">💊</div>
+      <div class="title">الوصفات المصروفة</div>
+      <div class="desc">مرتبطة بالمخزون</div>
+    </a>
+
+    
+    <a class="action-card card" href="/clinic/pharmacy">
+      <div class="icon">🏪</div>
+      <div class="title">الصيدلية</div>
+      <div class="desc">الأصناف · المخزون </div>
+    </a>
+
+    
+    <a class="action-card card" href="/inventory/">
+      <div class="icon">📦</div>
+      <div class="title">المخزن</div>
+      <div class="desc">لوحة المخزن</div>
+    </a>
+
+    
+    <a class="action-card card" href="/first-aid/">
+      <div class="icon">🧰</div>
+      <div class="title">صناديق الإسعافات</div>
+      <div class="desc">الأدوية الطارئة والمواد الأساسية</div>
+    </a>
+  </div>
+</div>
+{% endblock %}

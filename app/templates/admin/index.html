@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <span>الرئيسية</span>
+{% endblock %}
+
+{% block content %}
+
+
+{% if msg %}
+<div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+  <span>✅</span>
+  <span>{{ msg|replace('+', ' ') }}</span>
+</div>
+{% endif %}
+
+
+<style>
+  .section { background:#f7fbfc; border-radius:14px; padding:18px; margin-top:14px; }
+  .section-header { margin-bottom:10px; }
+  .section-title { color:#0e6a74; margin:0; font-weight:800; }
+
+  .kpi-grid {
+    display:grid; gap:16px; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-top: 12px;
+  }
+  .kpi-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f6fbfc 100%);
+    border: 1px solid #e6f0f2;
+    border-radius:12px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow: 0 6px 18px rgba(14,106,116,0.06);
+  }
+  .kpi-card .icon { font-size:1.9rem; }
+  .kpi-meta { display:flex; flex-direction:column; gap:2px; }
+  .kpi-label { font-size:.85rem; color:#5f7280; font-weight:600; }
+  .kpi-value { font-size:1.6rem; font-weight:800; color:#0e6a74; }
+  .kpi-sub { color:#4b6b73; font-size:0.78rem; }
+
+  /* Cards grid */
+  .cards-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 12px; }
+  .card-tile { background:#fff; border-radius:12px; padding:12px; display:block; text-decoration:none; color:inherit; border:1px solid #eef2f4; box-shadow: 0 8px 22px rgba(14,106,116,0.03); transition: transform .12s ease, box-shadow .12s ease; }
+  .card-tile:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(14,106,116,0.08); }
+  .card-tile .card-icon { font-size:22px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#f5fbfc; margin-bottom:6px; }
+  .card-tile .card-title { font-weight:700; margin:0 0 6px 0; color:#1b5360 }
+  .card-tile .card-desc { color:#657b82; font-size:0.9rem }
+</style>
+
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🛠️</div>
+    <h3>لوحة التحكم – الأدمن</h3>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="icon">👥</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">المستخدمون</div>
+        <div class="kpi-value">{{ counts.users }}</div>
+        <div class="kpi-sub">اجمالي المستخدمين في النظام</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">🛡️</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الأدمن</div>
+        <div class="kpi-value">{{ counts.admins }}</div>
+        <div class="kpi-sub">أذونات كاملة للنظام</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">🎓</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الكليات</div>
+        <div class="kpi-value">{{ counts.colleges }}</div>
+        <div class="kpi-sub">الكليات المسجّلة في النظام</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">🏫</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الأقسام</div>
+        <div class="kpi-value">{{ counts.departments }}</div>
+        <div class="kpi-sub">الأقسام المسجلة</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">📋</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الدورات</div>
+        <div class="kpi-value">{{ counts.courses }}</div>
+        <div class="kpi-sub">الدورات المضافة</div>
+      </div>
+    </div>
+    <div class="kpi-card" style="flex-direction:column; align-items:flex-start; gap:8px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="icon">✅</div>
+        <div class="kpi-meta">
+          <div class="kpi-label">دورات منشورة</div>
+          <div class="kpi-value">{{ counts.courses_published }}</div>
+        </div>
+      </div>
+      <div style="width:100%; background:#e9f4f6; height:8px; border-radius:6px; overflow:hidden;">
+        <div style="background:linear-gradient(90deg,#0e6a74,#2fb6bf); height:8px; width: {{ counts.courses_published_pct }}%; transition: width .4s ease;"></div>
+      </div>
+      <div class="kpi-sub">{{ counts.courses_published_pct }}% من إجمالي الدورات منشورة</div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">📊</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">المسجلون في الدورات المنشورة</div>
+        <div class="kpi-value">{{ counts.enrollments_published }}</div>
+        <div class="kpi-sub">عدد المتدربين المسجلين</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="card card-prestige" style="margin-top: 20px;">
+  <div class="card-head">
+    <div class="card-icon">🏥</div>
+    <h3>إحصائيات العيادة</h3>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">الأطباء</div>
+      <div class="kpi-value">{{ counts.get('doctors', 0) }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">المراجعين</div>
+      <div class="kpi-value">{{ counts.get('visits', 0) }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">الإحالات</div>
+      <div class="kpi-value">{{ counts.get('referrals', 0) }}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">الإجازات</div>
+      <div class="kpi-value">{{ counts.get('leaves', 0) }}</div>
+    </div>
+  </div>
+</section>
+
+
+<section class="card card-prestige" style="margin-top: 20px;">
+  <div class="card-head">
+    <div class="card-icon">💊</div>
+    <h3>إحصائيات الصيدلية</h3>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="icon">💉</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الأدوية النشطة</div>
+        <div class="kpi-value">{{ counts.get('pharmacy_drugs', 0) }}</div>
+        <div class="kpi-sub">عدد أنواع الأدوية</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">📦</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">إجمالي المخزون</div>
+        <div class="kpi-value">{{ counts.get('pharmacy_stock', 0) }}</div>
+        <div class="kpi-sub">عدد الوحدات المتاحة</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">📊</div>
+      <div class="kpi-meta">
+        <div class="kpi-label">الحركات</div>
+        <div class="kpi-value">{{ counts.get('pharmacy_movements', 0) }}</div>
+        <div class="kpi-sub">عمليات صرف/توريد</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">الوحدات 👥</h2>
+  </div>
+
+  <div class="cards-grid">
+    
+    <a class="card-tile" href="/admin/users">
+      <div class="card-icon">👤</div>
+      <div class="card-title">إدارة المستخدمين</div>
+      <div class="card-desc">إنشاء/تعديل/حذف المستخدمين والصلاحيات</div>
+    </a>
+
+    
+    <a class="card-tile" href="/admin/departments">
+      <div class="card-icon">🏫</div>
+      <div class="card-title">إدارة الأقسام</div>
+      <div class="card-desc">إضافة/تعديل الأقسام وربطها بالكليات</div>
+    </a>
+
+    
+    <a class="card-tile" href="/admin/colleges">
+      <div class="card-icon">🎓</div>
+      <div class="card-title">إدارة الكليات</div>
+      <div class="card-desc">إضافة/تعديل الكليات ومعلوماتها</div>
+    </a>
+
+    
+    <a class="card-tile" href="/admin/settings">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">إعدادات النظام</div>
+      <div class="card-desc">ضبط الإعدادات العامة</div>
+    </a>
+
+    
+    <a class="card-tile" href="/admin/audit">
+      <div class="card-icon">📜</div>
+      <div class="card-title">سجلات الدخول والنشاط</div>
+      <div class="card-desc">مراجعة العمليات ومحاولات الدخول</div>
+    </a>
+
+    
+    <a class="card-tile" href="/admin/backup">
+      <div class="card-icon">💾</div>
+      <div class="card-title">النسخ الاحتياطي</div>
+      <div class="card-desc">تصدير/استرجاع بيانات أساسية</div>
+    </a>
+  </div>
+</section>
+
+{% endblock %}

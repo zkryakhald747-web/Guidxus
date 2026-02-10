@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <span>إعدادات النظام</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .settings-wrap{display:grid;grid-template-columns:240px 1fr;gap:16px}
+  .tabs{background:#fff;border:1px solid #eee;border-radius:12px;padding:8px}
+  .tabs a{display:block;padding:10px 12px;border-radius:8px;color:#111827;text-decoration:none}
+  .tabs a.active,.tabs a:hover{background:#f3f4f6}
+  .pane{background:#fff;border:1px solid #eee;border-radius:12px;padding:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media(max-width:720px){.settings-wrap{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+  input,select,textarea{padding:8px 10px;border:1px solid #e6e6e6;border-radius:10px}
+  .muted{color:#6b7280}
+</style>
+
+<div class="settings-wrap">
+  <nav class="tabs">
+    {% set T=tab or 'general' %}
+    <a href="/admin/settings?tab=general" class="{{ 'active' if T=='general' else '' }}">عام</a>
+    <a href="/admin/settings?tab=localization" class="{{ 'active' if T=='localization' else '' }}">الهوية واللغة</a>
+    <a href="/admin/settings?tab=auth" class="{{ 'active' if T=='auth' else '' }}">المصادقة والجلسات</a>
+    <a href="/admin/settings?tab=roles" class="{{ 'active' if T=='roles' else '' }}">الأدوار والصلاحيات</a>
+    <a href="/admin/settings?tab=courses" class="{{ 'active' if T=='courses' else '' }}">إعدادات الدورات</a>
+    <a href="/admin/settings?tab=smtp" class="{{ 'active' if T=='smtp' else '' }}">الإشعارات (SMTP)</a>
+    <a href="/admin/settings?tab=security" class="{{ 'active' if T=='security' else '' }}">الأمان</a>
+    <a href="/admin/settings?tab=colleges" class="{{ 'active' if T=='colleges' else '' }}">سلوك الكليات</a>
+    <a href="/admin/settings?tab=maintenance" class="{{ 'active' if T=='maintenance' else '' }}">وضع الصيانة</a>
+    <a href="/admin/settings/cert-template" >قوالب الشهادات</a>
+  </nav>
+
+  <section class="pane">
+    <form method="post" action="/admin/settings/save">
+      <input type="hidden" name="tab" value="{{ T }}">
+
+      {% if T == 'general' %}
+        <div class="field"><label>اسم النظام <input name="app_name" value="{{ app_name }}"></label></div>
+        <div class="row">
+          <div class="field"><label>رابط الشعار (اختياري) <input name="ui_logo_url" value="{{ ui_logo_url }}"></label></div>
+          <div class="field"><label>رابط الأيقونة (favicon) (اختياري) <input name="ui_favicon_url" value="{{ ui_favicon_url }}"></label></div>
+        </div>
+        <div class="field"><label>نص التذييل <input name="ui_footer" value="{{ ui_footer }}"></label></div>
+        <div class="row">
+          <div class="field"><label>المنطقة الزمنية <input name="tz" value="{{ tz }}"></label></div>
+          <div class="field"><label>صيغة التاريخ <input name="date_fmt" value="{{ date_fmt }}"></label></div>
+        </div>
+      {% elif T == 'localization' %}
+        <div class="row">
+          <div class="field"><label>اللغة الافتراضية <input name="lang" value="{{ lang }}"></label></div>
+          <div class="field"><label>المظهر (light/dark) <input name="theme" value="{{ theme }}"></label></div>
+        </div>
+        <div class="muted">الواجهة RTL ثابتة. المظهر يُخزّن للاستخدام المستقبلي.</div>
+
+      {% elif T == 'auth' %}
+        <div class="row">
+          <div class="field"><label>مدة الجلسة (دقائق) <input type="number" name="sess_ttl" value="{{ sess_ttl }}"></label></div>
+          <div class="field"><label>الانقضاء المنزلق (ثواني) <input type="number" name="sess_sliding" value="{{ sess_sliding }}"></label></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>محاولات الدخول قبل القفل <input type="number" name="login_lock_attempts" value="{{ login_lock_attempts }}"></label></div>
+          <div class="field"><label>نافذة القفل (دقائق) <input type="number" name="login_lock_window" value="{{ login_lock_window }}"></label></div>
+        </div>
+
+      {% elif T == 'roles' %}
+        <label class="field"><input type="checkbox" name="feat_admin_colleges" {% if feat_admin_colleges %}checked{% endif %}> عرض وحدة الكليات</label>
+        <label class="field"><input type="checkbox" name="feat_admin_departments" {% if feat_admin_departments %}checked{% endif %}> عرض وحدة الأقسام</label>
+        <label class="field"><input type="checkbox" name="feat_admin_courses" {% if feat_admin_courses %}checked{% endif %}> عرض وحدة الدورات</label>
+
+      {% elif T == 'courses' %}
+        <div class="row">
+          <div class="field"><label>السعة الافتراضية <input type="number" name="course_capacity" value="{{ course_capacity }}"></label></div>
+          <div class="field"><label>سياسة التسجيل (open/approval) <input name="course_policy" value="{{ course_policy }}"></label></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>منع التكرار <input type="checkbox" name="course_prevent_dups" {% if course_prevent_dups %}checked{% endif %}></label></div>
+          <div class="field"><label>طريقة تحقق الحضور (paper/qr) <input name="course_attendance" value="{{ course_attendance }}"></label></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>نسبة الإنجاز للشهادة <input type="number" name="course_completion" value="{{ course_completion }}"></label></div>
+          <div class="field"><label>حالة النشر الافتراضية <input name="course_status" value="{{ course_status }}"></label></div>
+        </div>
+
+      {% elif T == 'smtp' %}
+        <div class="row">
+          <div class="field"><label>SMTP Host <input name="smtp_host" value="{{ smtp_host }}"></label></div>
+          <div class="field"><label>SMTP Port <input type="number" name="smtp_port" value="{{ smtp_port }}"></label></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>SMTP Username <input name="smtp_user" value="{{ smtp_user }}"></label></div>
+          <div class="field"><label>From Email <input name="smtp_from" value="{{ smtp_from }}"></label></div>
+        </div>
+        <div class="row">
+          <label class="field"><input type="checkbox" name="smtp_tls" {% if smtp_tls %}checked{% endif %}> Use TLS</label>
+          <label class="field"><input type="checkbox" name="smtp_ssl" {% if smtp_ssl %}checked{% endif %}> Use SSL</label>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" type="button" onclick="testSMTP()">اختبار الاتصال</button>
+        </div>
+        <div id="smtpResult" class="muted" style="margin-top:6px"></div>
+
+      {% elif T == 'security' %}
+        <label class="field"><input type="checkbox" name="force_https" {% if force_https %}checked{% endif %}> فرض HTTPS</label>
+        <div class="field"><label>CORS Origins (مفصولة بفواصل) <input name="cors_origins" value="{{ cors_origins }}"></label></div>
+
+      {% elif T == 'colleges' %}
+        <div class="field">
+          <label>مصدر أسماء الكليات (عرض فقط)
+            <input value="{{ colleges_source }}" disabled>
+          </label>
+          <div class="muted">{{ colleges_activation_hint }}</div>
+        </div>
+
+      {% elif T == 'maintenance' %}
+        <label class="field"><input type="checkbox" name="mnt_enabled" {% if mnt_enabled %}checked{% endif %}> تفعيل وضع الصيانة</label>
+        <div class="field"><label>عنوان الرسالة <input name="mnt_title" value="{{ mnt_title }}"></label></div>
+        <div class="field"><label>نص الرسالة <textarea name="mnt_body" rows="4">{{ mnt_body }}</textarea></label></div>
+        <label class="field"><input type="checkbox" name="mnt_admin_bypass" {% if mnt_admin_bypass %}checked{% endif %}> السماح للأدمن بالدخول أثناء الصيانة</label>
+        <div class="field"><label>قائمة IP مسموحة (CSV) <input name="mnt_allowed_ips" value="{{ mnt_allowed_ips }}"></label></div>
+      {% endif %}
+
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn btn-primary" type="submit">حفظ</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+async function testSMTP(){
+  const r = await fetch('/admin/settings/smtp-test', {method:'POST'});
+  const j = await r.json();
+  const el = document.getElementById('smtpResult');
+  el.textContent = j.ok ? 'تم الاتصال بنجاح ✅' : ('فشل الاتصال ❌: ' + (j.error||'')); 
+}
+</script>
+{% endblock %}

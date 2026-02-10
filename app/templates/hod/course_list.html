@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> › <span>قائمة الدورات</span>
+{% endblock %}
+
+{% block content %}
+
+{% set kpis = (kpis if kpis is defined and kpis else {'total_active':0,'total_enrolled':0,'completion_rate':0}) %}
+{% set courses = (courses if courses is defined else []) %}
+{% set course_targets = (course_targets if course_targets is defined else {}) %}
+{% set departments = (departments if departments is defined else []) %}
+{% set filters = (filters if filters is defined else {'q':'','status_filter':'','department_id':'','date_from':'','date_to':''}) %}
+
+{% if request.query_params.get('closed') %}
+  <div class="alert alert-success" role="alert">
+    ✓ تم إغلاق الدورة بنجاح
+  </div>
+{% endif %}
+
+{% if request.query_params.get('reopened') %}
+  <div class="alert alert-success" role="alert">
+    ✓ تم إعادة فتح الدورة بنجاح
+  </div>
+{% endif %}
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🎓</div>
+    <h3>قائمة الدورات التدريبية</h3>
+  </div>
+  <div class="inline" style="justify-content:space-between;align-items:center;">
+    <div class="muted">هنا يمكنك إدارة دورات قسمك: تعديل، إغلاق التسجيل، تصدير كشف، مطابقة الحضور، وإصدار الشهادات.</div>
+    <a class="btn btn-primary" href="/hod/courses/new">+ إنشاء دورة جديدة</a>
+  </div>
+</section>
+
+<section class="kpi-row">
+  <div class="kpi-card"><div class="kpi-label">الدورات النشطة</div><div class="kpi-value">{{ kpis.total_active or 0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">إجمالي المسجلين</div><div class="kpi-value">{{ kpis.total_enrolled or 0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">نسبة الإكمال</div><div class="kpi-value">{{ kpis.completion_rate or 0 }}%</div></div>
+</section>
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">🗂️</div>
+    <h3>تصفية</h3>
+  </div>
+  <form class="filter-form" method="get" action="/hod/courses">
+    <div class="grid">
+      <label>بحث بالعنوان
+        <input type="text" name="q" value="{{ filters.q or '' }}" placeholder="مثال: مهارات العرض">
+      </label>
+
+      <label>الحالة
+        <select name="status_filter">
+          <option value="" {{ 'selected' if not filters.status_filter }}>الكل</option>
+          <option value="draft"     {{ 'selected' if filters.status_filter=='draft' }}>مسودة</option>
+          <option value="published" {{ 'selected' if filters.status_filter=='published' }}>منشورة</option>
+          <option value="closed"    {{ 'selected' if filters.status_filter=='closed' }}>مغلقة</option>
+          <option value="finished"  {{ 'selected' if filters.status_filter=='finished' }}>منتهية</option>
+        </select>
+      </label>
+
+      <label>القسم المستهدف
+        <select name="department_id">
+          <option value="" {{ 'selected' if not filters.department_id }}>الكل</option>
+          {% for dep in departments %}
+            <option value="{{ dep.id }}"
+              {% if filters.department_id and (filters.department_id|string) == (dep.id|string) %}selected{% endif %}>
+              {{ dep.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>من تاريخ <input type="date" name="date_from" value="{{ filters.date_from or '' }}"></label>
+      <label>إلى تاريخ <input type="date" name="date_to" value="{{ filters.date_to or '' }}"></label>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">تصفية</button>
+      <a class="btn btn-secondary" href="/hod/courses">مسح</a>
+    </div>
+  </form>
+</section>
+
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">📋</div>
+    <h3>الدورات</h3>
+  </div>
+
+  {% if not courses %}
+    <div class="muted">لا توجد دورات مطابقة للبحث الحالي. ابدأ بإنشاء دورة جديدة.</div>
+  {% else %}
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>اسم الدورة</th>
+          <th>الحالة</th>
+          <th>الفترة</th>
+          <th>الأقسام المستهدفة</th>
+          <th>المسجلون / السعة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in courses %}
+        <tr>
+          <td class="title-cell">
+            <div class="title">{{ c.title }}</div>
+            <div class="sub muted">
+              آلية التنفيذ:
+              {% set mode_val = c.mode or '' %}
+              {% if mode_val in ['in_person','حضوري','حضوري '] %}حضوري
+              {% elif mode_val in ['remote','online','عن بُعد','عن بعد'] %}عن بُعد
+              {% else %}—{% endif %}
+              • {{ c.hours or 0 }} ساعة
+            </div>
+          </td>
+
+          <td>
+            {% if c.status=='published' %}<span class="badge badge-live">منشورة</span>
+            {% elif c.status=='draft' %}<span class="badge badge-draft">مسودة</span>
+            {% elif c.status=='finished' %}<span class="badge badge-finished">منتهية</span>
+            {% else %}<span class="badge badge-closed">مغلقة</span>{% endif %}
+          </td>
+
+          <td>{{ c.start_date }} – {{ c.end_date }}</td>
+
+          <td class="t-wrap">
+            {% set targets = course_targets.get(c.id, []) %}
+            {% if targets and targets|length > 0 %}{{ targets|join('، ') }}
+            {% else %}<span class="muted">غير محدد</span>{% endif %}
+          </td>
+
+          <td>{{ c.registered_count if c.registered_count is defined else 0 }} / {{ c.capacity or '—' }}</td>
+
+          <td class="actions-cell">
+            <a class="btn btn-xs" href="/hod/courses/{{ c.id }}/edit">تعديل</a>
+            
+            <a class="btn btn-xs" href="/hod/courses/{{ c.id }}/roster.pdf?download=1">كشف 📄</a>
+            <a class="btn btn-xs" href="/hod/attendance/{{ c.id }}">حضور ✅</a>
+            <a class="btn btn-xs" href="/hod/certificates/issue?course_id={{ c.id }}">شهادات 🎖️</a>
+            {% if c.status!='closed' %}
+              <a class="btn btn-xs danger" href="/hod/courses/{{ c.id }}/close">إغلاق 🔒</a>
+            {% elif c.status=='closed' %}
+              <a class="btn btn-xs warning" href="/hod/courses/{{ c.id }}/reopen">إعادة فتح 🔓</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

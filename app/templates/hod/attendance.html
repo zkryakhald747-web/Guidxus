@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> › <a href="/hod/courses">الدورات</a> › <span>الحضور - {{ course.title }}</span>
+{% endblock %}
+
+{% block content %}
+<h3>الحضور - {{ course.title }}</h3>
+
+<form method="post" action="/hod/attendance/{{ course.id }}/add-trainee" class="inline" style="gap:8px;">
+  <label>رقم المتدرب</label>
+  <input name="trainee_no" value="{{ trainee_no or '' }}" placeholder="مثال: 446119158" required>
+  <button class="btn btn-primary" type="submit">إضافة متدرب</button>
+</form>
+
+{% if student %}
+  <div class="muted" style="margin-top:6px;">
+    الاسم: {{ student.student_name }} | التخصص: {{ student.major }}
+  </div>
+{% endif %}
+
+<hr>
+
+<div class="table-wrap">
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>الرقم التدريبي</th>
+        <th>الاسم</th>
+        <th>التخصص</th>
+        <th>الحالة</th>
+        <th>تأكيد الحضور</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in enrollments %}
+        <tr>
+          <td>{{ e.trainee_no }}</td>
+          <td>{{ e.trainee_name or '—' }}</td>
+          <td>{{ e.trainee_major or '—' }}</td>
+          <td>{{ e.status }}</td>
+          <td>
+            <form method="post" action="/hod/attendance/{{ course.id }}/mark" style="display:inline;">
+              <input type="hidden" name="trainee_no" value="{{ e.trainee_no }}">
+              <input type="hidden" name="present" value="{{ 'false' if e.present else 'true' }}">
+              <button class="btn btn-xs {{ 'btn-primary' if not e.present else '' }}" type="submit">
+                {{ 'تسجيل الحضور' if not e.present else 'إلغاء الحضور' }}
+              </button>
+              {% if e.present %}
+                <span class="badge badge-live">حاضر</span>
+              {% else %}
+                <span class="badge badge-draft">غير حاضر</span>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">لا يوجد متدربون مسجلون بعد.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

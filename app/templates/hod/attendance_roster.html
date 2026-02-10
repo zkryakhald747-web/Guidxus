@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>كشف حضور - {{ course.title }}</title>
+  <style>
+    /* ====== خطوط مضمنة (يُحقن CSS من الباكند) ====== */
+    {{ font_ready_css|safe }}
+
+    :root{
+      --brand:#12a4b4; --brand-2:#0f7d89; --brand-accent:#6bbf4a;
+      --brand-light:#e9f7f9; --text:#2b2d31; --muted:#6a7680;
+      --border:#c5d6de; --zebra:#f6fbfc; --note:#6b7280;
+      --thead-bg: #f6faff; --thead-fg:#0d3b55;
+    }
+
+    /* xhtml2pdf */
+    @page {
+      size: A4 portrait;
+      margin: 10mm 10mm 16mm 10mm;
+    }
+
+    html, body {
+      direction: rtl;
+      margin:0; padding:0;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      color: var(--text);
+      font-size: 12.5pt;
+      line-height: 1.5;
+      font-family:
+        {{ "'MajallaAR','TradArabicAR','Majalla','Traditional Arabic','Arial Unicode MS','DejaVu Sans','Arial'" }};
+    }
+
+    * { font-family: inherit !important; }
+
+    /* ====== رأس: شعار + تعريف ====== */
+    header {
+      display:flex; align-items:center; justify-content:space-between;
+      flex-direction: row-reverse; margin: 2mm 0 3mm 0;
+    }
+    .header-right img { height: 80px; display:block; object-fit:contain; }
+    .header-left {
+      text-align:left; color:var(--muted);
+      font-size: 14pt; line-height:1.4; max-width:60%;
+    }
+    .brand-bar {
+      height:4px; background:linear-gradient(90deg,var(--brand),var(--brand-accent));
+      border-radius:6px; margin:4px 0 8px;
+    }
+
+    /* ====== بطاقة بيانات الدورة ====== */
+    .card {
+      position:relative; background:#fff; border-radius:10px;
+      padding:8px 10px; margin: 4px 0 8px 0; border:none;
+    }
+    .card::before {
+      content:""; position:absolute; inset:0.9mm;
+      border:1.4px solid var(--border); border-radius:10px; pointer-events:none;
+    }
+    .card-title {
+      color: var(--brand-2); font-weight:700; margin-bottom:4px; font-size: 16pt; text-align:center;
+    }
+    .meta {
+      display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; justify-content:space-between;
+      margin-top:2px;
+    }
+    .meta .item { white-space:nowrap; }
+    .meta .label { color: var(--thead-fg); font-weight:700; margin-inline-start:4px; }
+    .meta .value { color: var(--text); }
+
+    /* ====== جدول الحضور ====== */
+    table {
+      width:100%; border-collapse:collapse; table-layout:fixed;
+      border:1.2px solid var(--border); margin-top:6px;
+    }
+    thead th, tbody td {
+      border:1.2px solid var(--border);
+      padding:6px 8px; vertical-align:middle; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      text-align:center;
+    }
+    thead th {
+      background: var(--thead-bg);
+      color: var(--thead-fg);
+      font-weight: 700;
+    }
+    tbody tr:nth-child(even) td { background: var(--zebra); }
+    tbody td.sign { height: 22pt; } /* خانة التوقيع أعلى قليلاً */
+
+    /* ترتيب الأعمدة */
+    col.col-name  { width:33%; }
+    col.col-no    { width:22%; }
+    col.col-major { width:28%; }
+    col.col-sign  { width:17%; }
+
+    /* تكرار الترويسة لكل صفحة */
+    thead { display: table-header-group; }
+    tfoot { display: table-row-group; }
+    tr { page-break-inside: avoid; }
+
+    /* ====== تذييل ثابت ====== */
+    .footer {
+      margin-top:8px; font-size:10.5pt; color: #64748b;
+      text-align:center; border-top:1px dashed var(--border); padding-top:6px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      تم تصدير هذا الكشف عبر نظام خدمات المتدربين — <span dir="ltr" style="font-weight:700;color:var(--brand-2)">Guidxus</span>
+    </div>
+    <div class="header-right">
+      {% if logo_src %}<img src="{{ logo_src }}" alt="logo">{% endif %}
+    </div>
+  </header>
+  <div class="brand-bar"></div>
+
+  <section class="card">
+    <div class="card-title">بيانات الدورة</div>
+    <div class="meta">
+      <div class="item"><span class="label">اسم الدورة:</span><span class="value">{{ course.title }}</span></div>
+      <div class="item"><span class="label">عدد الساعات:</span><span class="value">{{ '%.1f'|format(course.hours or 0) }}</span></div>
+      <div class="item"><span class="label">الفترة:</span><span class="value">{{ course.start_date }} – {{ course.end_date }}</span></div>
+      {% if course.provider %}<div class="item"><span class="label">الجهة المنفّذة:</span><span class="value">{{ course.provider }}</span></div>{% endif %}
+      {% if course.provider_name %}<div class="item"><span class="label">اسم المنفّذ:</span><span class="value">{{ course.provider_name }}</span></div>{% endif %}
+    </div>
+  </section>
+
+  <main>
+    <table role="table" aria-label="كشف حضور الدورة">
+      <colgroup>
+        <col class="col-name">
+        <col class="col-no">
+        <col class="col-major">
+        <col class="col-sign">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>اسم المتدرب</th>
+          <th>الرقم التدريبي</th>
+          <th>التخصص</th>
+          <th>توقيع المتدرب</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if enrollments and enrollments|length > 0 %}
+          {% for r in enrollments %}
+          <tr>
+            <td>{{ r.trainee_name or '' }}</td>
+            <td>{{ r.trainee_no or '' }}</td>
+            <td>{{ r.trainee_major or '' }}</td>
+            <td class="sign"></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="4" style="text-align:center;color:#64748b;">لا يوجد مسجّلون</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </main>
+
+  <div class="footer">
+    تم تصدير هذا النموذج من نظام Guidxus لإدارة خدمات المتدربين
+  </div>
+
+</body>
+</html>

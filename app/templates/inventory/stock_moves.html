@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/inventory/">المستودع</a> › <span>توريد الأدوية</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+  .page-header {
+    background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0284c7;
+    padding: 24px;
+    margin-bottom: 24px;
+    border-radius: 8px;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+    color: #0c4a6e;
+    margin: 0 0 8px 0;
+    font-weight: 800;
+  }
+  
+  .page-subtitle {
+    color: #0c63e4;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e0f2fe;
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    margin-bottom: -2px;
+  }
+
+  .tab-btn.active {
+    color: #0284c7;
+    border-bottom-color: #0284c7;
+  }
+
+  .tab-btn:hover {
+    color: #0284c7;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  @media (max-width: 1200px) {
+    .main-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .section-title {
+    color: #0c4a6e;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* جدول الأدوية */
+  .drugs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+  }
+
+  .drugs-table th {
+    background: #e0f2fe;
+    color: #0c4a6e;
+    padding: 12px 10px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .drugs-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+  }
+
+  .drugs-table tr:hover {
+    background: #f0f9ff;
+  }
+
+  .drug-name {
+    font-weight: 600;
+    color: #0c4a6e;
+  }
+
+  .qty-low {
+    color: #dc2626;
+    font-weight: 600;
+  }
+
+  .qty-normal {
+    color: #16a34a;
+    font-weight: 600;
+  }
+
+  .select-drug-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .select-drug-btn:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+  }
+
+  /* نموذج الصرف/التوريد */
+  .action-form {
+    background: #f0f9ff;
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid #0284c7;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    color: #0c4a6e;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #0284c7;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: white;
+    color: #1e293b;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(2,132,199,0.1);
+  }
+
+  .form-group select option {
+    color: #1e293b;
+  }
+
+  .selected-drug-info {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    border-left: 4px solid #0284c7;
+  }
+
+  .selected-drug-info p {
+    margin: 4px 0;
+    font-size: 0.9rem;
+  }
+
+  .selected-drug-info strong {
+    color: #0c4a6e;
+  }
+
+  .action-btn {
+    width: 100%;
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .dispense-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+
+  .dispense-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239,68,68,0.3);
+  }
+
+  .supply-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+
+  .supply-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16,185,129,0.3);
+  }
+
+  .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .alert {
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    animation: slideIn 0.3s ease;
+  }
+
+  .alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+
+  .alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+  }
+
+  .no-drug-message {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  /* شريط البحث */
+  .search-bar {
+    margin-bottom: 16px;
+  }
+
+  .search-bar input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #0284c7;
+    border-radius: 6px;
+    font-size: 0.95rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+</style>
+
+
+{% if msg %}
+  {% if msg == 'drug_dispensed_successfully' %}
+    <div class="alert alert-success">
+      ✅ تم صرف الدواء بنجاح وتم خصم الكمية من المستودع والصيدلية!
+    </div>
+  {% elif msg == 'drug_supplied_successfully' %}
+    <div class="alert alert-success">
+      ✅ تم توريد الدواء بنجاح وتم إضافة الكمية للمستودع والصيدلية!
+    </div>
+  {% endif %}
+{% endif %}
+
+
+<div class="page-header">
+  <h1 class="page-title">📦 توريد الأدوية</h1>
+  <p class="page-subtitle">إضافة أدوية جديدة إلى المستودع والصيدلية</p>
+</div>
+
+
+<div class="main-content">
+  
+  <div class="section">
+    <h2 class="section-title">📋 قائمة الأدوية</h2>
+    
+    <div class="search-bar">
+      <input 
+        type="text" 
+        id="supplyDrugSearch" 
+        placeholder="ابحث عن دواء بالاسم أو الكود..."
+      >
+    </div>
+
+    <div class="table-container">
+      <table class="drugs-table">
+        <thead>
+          <tr>
+            <th>الاسم التجاري</th>
+            <th>الكود</th>
+            <th>الرصيد الحالي</th>
+            <th>الوحدة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="supplyDrugsTableBody">
+          {% if drugs %}
+            {% for drug in drugs %}
+            <tr class="supply-drug-row" data-drug-id="{{ drug.id }}">
+              <td>
+                <span class="drug-name">{{ drug.trade_name }}</span>
+                {% if drug.generic_name %}
+                  <div style="font-size: 0.8rem; color: #64748b;">{{ drug.generic_name }}</div>
+                {% endif %}
+              </td>
+              <td>{{ drug.drug_code }}</td>
+              <td>
+                <span class="qty-normal">
+                  {{ drug.warehouse_qty }}
+                </span>
+              </td>
+              <td>{{ drug.unit }}</td>
+              <td>
+                <button 
+                  class="select-drug-btn"
+                  onclick="selectSupplyDrug({{ drug.id }}, '{{ drug.trade_name }}', '{{ drug.unit }}')"
+                >
+                  اختر
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="5" class="no-drug-message">لا توجد أدوية في النظام</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  
+  <div class="section">
+    <h2 class="section-title">📥 نموذج توريد الأدوية</h2>
+    
+    <form class="action-form" onsubmit="submitSupply(event)">
+      <div id="selectedSupplyDrugInfo" class="no-drug-message">اختر دواء من القائمة بجانبك</div>
+
+      <div class="form-group">
+        <label for="supplyQuantityInput">الكمية المراد توريدها</label>
+        <input 
+          type="number" 
+          id="supplyQuantityInput" 
+          name="quantity"
+          min="1"
+          placeholder="أدخل الكمية"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="supplyExpiryDate">تاريخ الصلاحية</label>
+        <input 
+          type="date" 
+          id="supplyExpiryDate" 
+          name="expiry_date"
+          placeholder="اختر تاريخ الانتهاء"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="supplyNotes">ملاحظات (اختياري)</label>
+        <input 
+          type="text" 
+          id="supplyNotes" 
+          name="notes"
+          placeholder="مثال: وارد من المستودع الرئيسي"
+        >
+      </div>
+
+      <button type="submit" class="action-btn supply-btn" id="supplyBtn" disabled>
+        📦 توريد الدواء
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  let selectedSupplyDrug = null;
+
+  function selectSupplyDrug(drugId, drugName, unit) {
+    selectedSupplyDrug = { id: drugId, name: drugName, unit: unit };
+    
+    document.getElementById('selectedSupplyDrugInfo').innerHTML = `
+      <strong>✓ الدواء المختار:</strong><br>
+      <p><strong>الاسم:</strong> ${drugName}</p>
+      <p><strong>الوحدة:</strong> ${unit}</p>
+    `;
+    
+    document.getElementById('supplyBtn').disabled = false;
+  }
+
+  function submitSupply(event) {
+    event.preventDefault();
+    
+    if (!selectedSupplyDrug) {
+      alert('الرجاء اختيار دواء أولاً');
+      return;
+    }
+
+    const quantity = parseInt(document.getElementById('supplyQuantityInput').value);
+    const notes = document.getElementById('supplyNotes').value;
+    const expiry_date = document.getElementById('supplyExpiryDate').value;
+
+    const url = `/inventory/supply-drugs/process?drug_id=${selectedSupplyDrug.id}&quantity=${quantity}&notes=${encodeURIComponent(notes)}&expiry_date=${expiry_date}`;
+    window.location.href = url;
+  }
+
+  // البحث في الأدوية - توريد
+  document.getElementById('supplyDrugSearch').addEventListener('keyup', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.supply-drug-row');
+    
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+  });
+
+  // إزالة رسالة النجاح بعد 5 ثواني
+  setTimeout(() => {
+    const alert = document.querySelector('.alert');
+    if (alert) {
+      alert.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => alert.remove(), 300);
+    }
+  }, 5000);
+</script>
+
+{% endblock %}

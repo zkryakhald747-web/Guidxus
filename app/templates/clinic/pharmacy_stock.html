@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block breadcrumb %}الصيدلية → الكميات{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <h3>توريد / صرف / جرد — MAIN-PHARMA</h3>
+    <form method="get" class="inline">
+      <input name="q" value="{{ q }}" placeholder="فلترة القائمة بالاسم">
+      <button class="btn">تصفية</button>
+      <a class="btn ghost" href="/clinic/pharmacy/stock">مسح</a>
+    </form>
+  </div>
+
+  {# ==== تنبيه نتيجة العملية (نجاح/معلومة/خطأ) ==== #}
+  {% set _msg  = msg or request.query_params.get('msg') %}
+  {% set _need = need or request.query_params.get('need') %}
+  {% set _have = have or request.query_params.get('have') %}
+
+  {% if _msg %}
+    {% if _msg in ['in_ok','out_ok','adjust_ok'] %}
+      <div class="alert alert-success" role="alert" aria-live="polite">
+        {{ 'تم تسجيل التوريد بنجاح.' if _msg=='in_ok'
+           else 'تم تسجيل الصرف بنجاح.' if _msg=='out_ok'
+           else 'تم تحديث الجرد بنجاح.' }}
+      </div>
+    {% elif _msg == 'no_change' %}
+      <div class="alert alert-info" role="status" aria-live="polite">
+        لا يوجد فرق بين الرصيد والكمية الفعلية.
+      </div>
+    {% elif _msg == 'err_insufficient' %}
+      <div class="alert alert-danger" role="alert" aria-live="assertive">
+        لا يمكن صرف <b>{{ _need }}</b>، الرصيد المتوفر حاليًّا <b>{{ _have }}</b> فقط.
+      </div>
+    {% elif _msg == 'err_unknown' %}
+      <div class="alert alert-danger" role="alert" aria-live="assertive">
+        حدث خطأ غير متوقع أثناء العملية. حاول مرة أخرى.
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="status">{{ _msg }}</div>
+    {% endif %}
+  {% endif %}
+
+  <div class="grid-3 slim">
+    
+    <form class="stack" method="post" action="/clinic/pharmacy/movements/in" autocomplete="off">
+      <h4>توريد</h4>
+      <input class="drug-lookup" name="drug_q" placeholder="اسم الدواء (تجاري/علمي)" list="drug-suggest" required>
+      <input type="number" name="qty" min="1" placeholder="كمية" required>
+      <input name="ref_note" placeholder="ملاحظة (اختياري)">
+      <button class="btn primary">إضافة</button>
+    </form>
+
+    
+    <form class="stack" method="post" action="/clinic/pharmacy/movements/out" autocomplete="off">
+      <h4>صرف</h4>
+      <input class="drug-lookup" name="drug_q" placeholder="اسم الدواء" list="drug-suggest" required>
+      <input type="number" name="qty" min="1" placeholder="كمية" required>
+      <input name="ref_note" placeholder="ملاحظة (اختياري)">
+      <button class="btn danger">صرف</button>
+    </form>
+
+    
+    <form class="stack" method="post" action="/clinic/pharmacy/movements/adjust" autocomplete="off">
+      <h4>جرد</h4>
+      <input class="drug-lookup" name="drug_q" placeholder="اسم الدواء" list="drug-suggest" required>
+      <input type="number" name="counted_qty" min="0" placeholder="الكمية الفعلية" required>
+      <input name="ref_note" placeholder="ملاحظة">
+      <button class="btn info">تحديث الرصيد</button>
+    </form>
+  </div>
+
+  <datalist id="drug-suggest"></datalist>
+
+  <table class="tbl mt">
+    <thead>
+      <tr><th>#</th><th>الاسم</th><th>العلمي</th><th>الجرعة</th><th>الشكل</th><th>الرصيد</th><th>سجل</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td><b>{{ r.trade_name }}</b></td>
+        <td class="muted">{{ r.generic_name }}</td>
+        <td>{{ r.strength }}</td>
+        <td>{{ r.form }}</td>
+        <td>
+          {% set qty = r.stock_main or 0 %}
+          {% set cls = 'pill ok' if qty >= 5 else ('pill warn' if qty > 0 else 'pill danger') %}
+          <span class="{{ cls }}">{{ qty }}</span>
+        </td>
+        <td>
+          <a class="btn xs ghost" title="سجل الحركات لهذا الدواء"
+             href="/clinic/pharmacy/movements/log?drug_id={{ r.id }}">📑</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="muted mt">
+    تنبيه: الجرد يحسب الفرق تلقائيًا ويُسجل حركة <code>adjust</code>.
+  </div>
+</div>
+
+<script>
+/* Autocomplete بسيط عبر /clinic/pharmacy/drugs/search?q= */
+(function(){
+  const inputs = document.querySelectorAll('input.drug-lookup');
+  const datalist = document.getElementById('drug-suggest');
+
+  async function fetchDrugs(q){
+    if(!q || q.length < 2) { datalist.innerHTML = ''; return; }
+    try{
+      const url = '/clinic/pharmacy/drugs/search?q=' + encodeURIComponent(q);
+      const r = await fetch(url, {headers: {'Accept':'application/json'}});
+      if(!r.ok) return;
+      const data = await r.json();
+      datalist.innerHTML = (data.items || [])
+        .map(it => `<option value="${it.label}"></option>`)
+        .join('');
+    }catch(_){}
+  }
+
+  inputs.forEach(inp => {
+    inp.addEventListener('input', (e) => fetchDrugs(e.target.value));
+    inp.addEventListener('focus', (e) => {
+      if (e.target.value) fetchDrugs(e.target.value);
+    });
+  });
+})();
+</script>
+
+<style>
+/* تنبيهات مدمجة */
+.alert{padding:10px 12px;border-radius:8px;margin:10px 0;font-weight:600}
+.alert-success{background:#e6f8ec;color:#1e8e3e}
+.alert-info{background:#eef5ff;color:#0b57d0}
+.alert-danger{background:#fde8e8;color:#b00020}
+
+/* ألوان أزرار خفيفة بدون تغيير نظامك */
+.btn.danger{background:#e53935;color:#fff}
+.btn.info{background:#1976d2;color:#fff}
+
+/* شارات الرصيد */
+.pill { padding: 2px 8px; border-radius: 999px; font-weight:600; display:inline-block; }
+.pill.ok { background:#e6f8ec; color:#1e8e3e; }
+.pill.warn { background:#fff4e5; color:#b26a00; }
+.pill.danger { background:#fde8e8; color:#b00020; }
+</style>
+{% endblock %}

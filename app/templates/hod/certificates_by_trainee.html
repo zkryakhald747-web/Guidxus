@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block breadcrumb %}الشهادات › تصدير شهادة لمتدرب{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-head"><span class="card-icon">🎓</span><h3>تصدير شهادة لمتدرب</h3></div>
+  <form method="get" class="form-inline">
+    <label>رقم المتدرب</label>
+    <input type="text" name="trainee_no" value="{{ trainee_no }}" required class="input">
+    <button class="btn btn-primary">بحث</button>
+  </form>
+
+  {% if trainee_no and courses|length == 0 %}
+    <div class="alert alert-warning">لا توجد دورات مرتبطة بهذا الرقم وفق نطاق صلاحيتك.</div>
+  {% endif %}
+
+  {% if courses and courses|length > 0 %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>الدورة</th>
+          <th>الساعات</th>
+          <th>الفترة</th>
+          <th>حالة الدورة</th>
+          <th>الحضور</th>
+          <th>الشهادة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in courses %}
+          <tr>
+            <td>{{ r.course_title }}</td>
+            <td>{{ r.hours }}</td>
+            <td dir="ltr">
+              {{ r.start_date and r.start_date.strftime('%Y-%m-%d') }} —
+              {{ r.end_date and r.end_date.strftime('%Y-%m-%d') }}
+            </td>
+            <td>
+              {% if r.course_status == 'closed' %}
+                <span class="badge badge-success">مغلقة</span>
+              {% elif r.course_status == 'published' %}
+                <span class="badge badge-info">منشورة</span>
+              {% else %}
+                <span class="badge">{{ r.course_status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.present %}
+                <span class="badge badge-success">حاضر</span>
+              {% else %}
+                <span class="badge badge-danger">غير حاضر</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.course_status == 'closed' and r.present %}
+                <a class="btn btn-primary"
+                   href="/hod/certificates/print/{{ r.course_id }}/{{ trainee_no }}"
+                   title="تصدير الشهادة">
+                  تصدير الشهادة
+                </a>
+              {% else %}
+                <button class="btn" disabled title="يشترط إغلاق الدورة وتأكيد الحضور">تصدير الشهادة</button>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+{% endblock %}

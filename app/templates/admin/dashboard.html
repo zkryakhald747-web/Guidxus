@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a>
+{% endblock %}
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head"><div class="card-icon">🛠️</div><h3>لوحة التحكم – الأدمن</h3></div>
+  <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:12px;">
+    <div class="kpi-box"><div class="kpi-title">المستخدمون</div><div class="kpi-value">{{ stats.users }}</div></div>
+    <div class="kpi-box"><div class="kpi-title">الأدمن</div><div class="kpi-value">{{ stats.admins }}</div></div>
+    <div class="kpi-box"><div class="kpi-title">رؤساء الأقسام</div><div class="kpi-value">{{ stats.hods }}</div></div>
+  </div>
+</section>
+
+<section class="card card-prestige">
+  <div class="card-head"><div class="card-icon">👥</div><h3>الوحدات</h3></div>
+  <div class="card-grid">
+    <a class="action-card" href="/admin/users">
+      <div class="icon">👤</div>
+      <div class="title">إدارة المستخدمين</div>
+      <div class="desc">إنشاء وتعديل وحذف المستخدمين والصلاحيات</div>
+    </a>
+  </div>
+</section>
+{% endblock %}

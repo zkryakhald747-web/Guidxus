@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <a href="/admin/settings">إعدادات النظام</a> › <span>قالب الشهادة (عام)</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .form-card { max-width: 900px; margin: 0 auto; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+  textarea { min-height: 380px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+</style>
+
+<div class="card form-card">
+  <div class="card-head">
+    <div class="card-icon">🧩</div>
+    <h3>قالب شهادة — عام</h3>
+  </div>
+  <form method="post" action="/admin/settings/cert-template">
+    <div class="field"><label>اسم القالب <input name="name" value="{{ item.name if item else 'Default Global Template' }}"></label></div>
+    <div class="field"><label>HTML القالب
+      <textarea name="content_html">{{ item.content_html if item else '<div style="text-align:center"><h1>شهادة إتمام</h1><p>{{ trainee.full_name }} أكمل دورة {{ course.title }} ({{ course.hours }} ساعة)</p></div>' }}</textarea>
+    </label></div>
+    <label class="field"><input type="checkbox" name="is_active" {% if item and item.is_active %}checked{% endif %}> تفعيل القالب</label>
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn btn-primary" type="submit">حفظ</button>
+      <a class="btn btn-secondary" href="/admin/settings">رجوع</a>
+    </div>
+  </form>
+  <div class="muted" style="margin-top:8px">
+    المتغيّرات المتاحة: {{ '{{ trainee.full_name }}' }}, {{ '{{ course.title }}' }}, {{ '{{ course.hours }}' }}, {{ '{{ issue_date }}' }}, {{ '{{ college.name }}' }}
+  </div>
+</div>
+{% endblock %}

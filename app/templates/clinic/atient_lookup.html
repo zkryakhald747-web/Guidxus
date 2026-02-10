@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block breadcrumb %}العيادة الطبية › الملف الطبي{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-head"><span class="card-icon">🧑‍⚕️</span><h3>البحث عن متدرب/موظف</h3></div>
+  <form class="form" method="get">
+    <label>رقم المتدرب / رقم الموظف
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="مثال: 123456">
+    </label>
+    <div class="actions">
+      <button class="btn btn-primary">بحث</button>
+      <a class="btn btn-secondary" href="/clinic/">رجوع</a>
+    </div>
+  </form>
+</div>
+
+{% if q %}
+<div class="card">
+  <div class="card-head"><span class="card-icon">📄</span><h3>السجل الطبي لـ {{ q }}</h3></div>
+  <p class="muted">(سيُعرض هنا تاريخ الزيارات والتشخيصات والوصفات بعد ربط قاعدة البيانات)</p>
+</div>
+{% endif %}
+{% endblock %}

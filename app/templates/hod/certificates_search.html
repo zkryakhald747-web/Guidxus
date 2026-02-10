@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}البحث عن الشهادات{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">🎖️ البحث عن شهادات المتدربين</h4>
+        </div>
+        <div class="card-body">
+          
+          <form method="get" action="/hod/certificates/issue" class="mb-4">
+            <div class="input-group input-group-lg">
+              <input 
+                type="text" 
+                name="search" 
+                class="form-control" 
+                placeholder="ابحث برقم المتدرب أو الاسم... (مثال: 123456789)"
+                value="{{ search }}"
+                autofocus
+              />
+              <button class="btn btn-primary" type="submit">🔍 بحث</button>
+              {% if search %}
+                <a href="/hod/certificates/issue" class="btn btn-secondary">🔄 مسح</a>
+              {% endif %}
+            </div>
+          </form>
+
+          {% if search %}
+            
+            {% if trainee_info %}
+              <div class="alert alert-success alert-dismissible fade show">
+                <h5 class="alert-heading">✓ بيانات المتدرب</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <strong>الرقم:</strong> {{ trainee_info.trainee_no }}<br/>
+                    <strong>الاسم:</strong> {{ trainee_info.trainee_name or 'غير محدد' }}<br/>
+                  </div>
+                  <div class="col-md-6">
+                    <strong>عدد الشهادات:</strong> <span class="badge bg-info">{{ trainee_info.total_certificates }}</span><br/>
+                    <strong>إجمالي الساعات:</strong> <span class="badge bg-success">{{ trainee_info.total_hours }}</span>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div class="table-responsive">
+                <table class="table table-hover table-striped table-sm">
+                  <thead class="table-primary sticky-top">
+                    <tr>
+                      <th width="5%">م</th>
+                      <th width="15%">اسم الدورة</th>
+                      <th width="8%">الساعات</th>
+                      <th width="12%">تاريخ البداية</th>
+                      <th width="12%">تاريخ النهاية</th>
+                      <th width="18%">كود الشهادة</th>
+                      <th width="15%">تاريخ الإصدار</th>
+                      <th width="15%">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for cert in certificates %}
+                      <tr>
+                        <td><strong>{{ loop.index }}</strong></td>
+                        <td>
+                          <strong>{{ cert.course_title or 'دورة بدون عنوان' }}</strong>
+                        </td>
+                        <td>
+                          {% if cert.hours %}
+                            <span class="badge bg-info">{{ cert.hours }}</span>
+                          {% else %}
+                            <span class="badge bg-secondary">---</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if cert.start_date %}
+                            <small>
+                              {% if cert.start_date is string %}
+                                {{ cert.start_date }}
+                              {% else %}
+                                {{ cert.start_date.strftime('%d/%m/%Y') }}
+                              {% endif %}
+                            </small>
+                          {% else %}
+                            <small class="text-muted">---</small>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if cert.end_date %}
+                            <small>
+                              {% if cert.end_date is string %}
+                                {{ cert.end_date }}
+                              {% else %}
+                                {{ cert.end_date.strftime('%d/%m/%Y') }}
+                              {% endif %}
+                            </small>
+                          {% else %}
+                            <small class="text-muted">---</small>
+                          {% endif %}
+                        </td>
+                        <td>
+                          <code class="bg-light p-1">{{ cert.certificate_code }}</code>
+                        </td>
+                        <td>
+                          {% if cert.created_at %}
+                            <small>
+                              {% if cert.created_at is string %}
+                                {{ cert.created_at }}
+                              {% else %}
+                                {{ cert.created_at.strftime('%d/%m/%Y %H:%M') }}
+                              {% endif %}
+                            </small>
+                          {% else %}
+                            <small class="text-muted">---</small>
+                          {% endif %}
+                        </td>
+                        <td>
+                          <div class="btn-group btn-group-sm" role="group">
+                            <a href="/verify/{{ cert.certificate_code }}" class="btn btn-info" target="_blank" title="التحقق من الشهادة">
+                              ✓ تحقق
+                            </a>
+                            <a href="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ cert.certificate_code }}" class="btn btn-secondary" target="_blank" title="عرض الباركود">
+                              📊 QR
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="alert alert-info mt-3">
+                <strong>📊 ملخص:</strong> عدد الشهادات: <strong>{{ trainee_info.total_certificates }}</strong> | إجمالي الساعات: <strong>{{ trainee_info.total_hours }}</strong>
+              </div>
+            {% else %}
+              <div class="alert alert-warning">
+                ❌ لم يتم العثور على شهادات للمتدرب: <strong>{{ search }}</strong>
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="alert alert-info" style="border-left: 4px solid #0d6efd;">
+              <h5>📝 كيفية الاستخدام:</h5>
+              <ul class="mb-0">
+                <li>أدخل <strong>رقم المتدرب</strong> (مثال: 123456789) للبحث عن جميع شهاداته</li>
+                <li>أو أدخل <strong>اسم المتدرب</strong> (حتى لو جزء من الاسم)</li>
+                <li>ستظهر جميع الدورات التي حصل على شهادة فيها مع التفاصيل الكاملة</li>
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      
+      <div class="mt-3">
+        <a href="{{ back_url }}" class="btn btn-secondary btn-lg">← عودة</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sticky-top {
+    background-color: #fff;
+    z-index: 10;
+  }
+  .table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+  code {
+    color: #d63384;
+    word-break: break-all;
+  }
+</style>
+{% endblock %}
+

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block breadcrumb %}
+  <span>الرئيسية</span>
+{% endblock %}
+{% block content %}
+
+<style>
+  .services-section {
+    margin-bottom: 24px;
+  }
+  .section-title {
+    color: #0e6a74;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin: 20px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e6f0f2;
+  }
+</style>
+
+
+<div class="services-section">
+  <div class="section-title">📚 خدمات التدريب</div>
+  <div class="card-grid">
+    <a class="card action-card" href="/hod/courses/new">
+      <div class="icon">➕</div><div class="title">إضافة دورة</div>
+      <div class="desc">إنشاء دورة جديدة وتحديد الأقسام المستهدفة والسعة والسياسات.</div>
+    </a>
+    <a class="card action-card" href="/hod/courses">
+      <div class="icon">📋</div><div class="title">استعراض الدورات</div>
+      <div class="desc">عرض وإدارة الدورات المنشورة والمسودات وإجراءات المتابعة.</div>
+    </a>
+    <a class="card action-card" href="/hod/certificates/issue">
+      <div class="icon">🎖️</div><div class="title">تصدير شهادة لمتدرب</div>
+      <div class="desc">ابحث برقم المتدرب واختر دورة مكتملة لإصدار الشهادة.</div>
+    </a>
+    <a class="card action-card" href="/hod/skills/record">
+      <div class="icon">📑</div><div class="title">سجل المهارات الشخصية</div>
+      <div class="desc">تصدير سجل شامل بالدورات والساعات للمتدرب.</div>
+    </a>
+  </div>
+</div>
+
+
+{% set cu = request.session.get('user') %}
+{% if cu and cu.get('is_doc') %}
+<div class="services-section">
+  <div class="section-title">🏥 خدمات طبية</div>
+  <div class="card-grid">
+    <a class="card action-card" href="/clinic/">
+      <div class="icon">🏥</div><div class="title">العيادة</div>
+      <div class="desc">إدارة حالات المتدربين الصحية والملفات الطبية والمتابعة.</div>
+    </a>
+    <a class="card action-card" href="/pharmacy/">
+      <div class="icon">💊</div><div class="title">الصيدلية</div>
+      <div class="desc">إدارة المخزون الدوائي والصرف والحركات والتقارير.</div>
+    </a>
+    <a class="card action-card" href="/first-aid/">
+      <div class="icon">🧰</div><div class="title">صناديق الإسعافات</div>
+      <div class="desc">إدارة صناديق الإسعافات والأدوية الطارئة في مواقع مختلفة.</div>
+    </a>
+    <a class="card action-card" href="/inventory/">
+      <div class="icon">📦</div><div class="title">المخزون العام</div>
+      <div class="desc">إدارة المخزون العام والمستلزمات الأخرى.</div>
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

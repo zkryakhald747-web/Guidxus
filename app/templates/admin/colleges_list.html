@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <span>الكليات</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .toolbar { display:flex; gap:10px; align-items:center; justify-content:flex-end; margin-bottom:12px; }
+  .toolbar .grow { margin-inline-start:auto; }
+  table.tbl { width:100%; border-collapse:separate; border-spacing:0; }
+  table.tbl th, table.tbl td { padding:12px 14px; border-bottom:1px solid #eee; background:#fff; }
+  table.tbl th { background:#f8fafb; text-align:right; font-weight:700; color:#374151; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:999px; font-size:.85rem; }
+  .badge-on { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+  .badge-off { background:#fff1f2; color:#b91c1c; border:1px solid #fecdd3; }
+  .muted { color:#6b7280; }
+</style>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-icon">🎓</div>
+    <h3>إدارة الكليات</h3>
+  </div>
+
+  <div class="toolbar">
+    <form class="grow" method="get" action="/admin/colleges">
+      <input type="search" name="q" value="{{ q }}" placeholder="بحث باسم الكلية…">
+      <button class="btn btn-secondary" type="submit">بحث</button>
+    </form>
+    {% if not current_user or not current_user.is_college_admin %}
+    <a class="btn btn-primary" href="/admin/colleges/new">➕ إضافة كلية</a>
+    {% else %}
+    <button class="btn btn-primary" disabled>➕ إضافة كلية</button>
+    {% endif %}
+  </div>
+
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:24%">اسم الكلية</th>
+          <th style="width:19%">عميد الكلية</th>
+          <th style="width:19%">وكيل شؤون المتدربين</th>
+          <th style="width:19%">وكيل شؤون المدربين</th>
+          <th style="width:9%">الحالة</th>
+          <th style="width:10%">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in items %}
+        {% set norm = c.name.strip().split()|join(' ') %}
+        <tr>
+          <td>
+            {{ c.name }}
+            {% if dep_counts_norm.get(norm) %}
+              <div class="muted" style="font-size:.85rem">أقسام مرتبطة: {{ dep_counts_norm.get(norm) }}</div>
+            {% endif %}
+            {% if c.is_virtual %}
+              <div class="muted" style="font-size:.85rem">غير مُسجّلة بعد — مستخرجة من الأقسام</div>
+            {% endif %}
+          </td>
+          <td>{{ c.dean_name or '—' }}</td>
+          <td>{{ c.vp_students_name or '—' }}</td>
+          <td>{{ c.vp_trainers_name or '—' }}</td>
+          <td>
+            {% if not c.is_virtual and c.is_active %}
+              <span class="badge badge-on">نشطة</span>
+            {% else %}
+              <span class="badge badge-off">{{ 'غير نشطة' if not c.is_virtual else 'غير مُسجّلة' }}</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            {% if c.is_virtual %}
+              <a class="btn btn-secondary" href="/admin/colleges/new?name={{ c.name | urlencode }}">إكمال البيانات</a>
+            {% else %}
+              <a class="btn btn-secondary" href="/admin/colleges/{{ c.id }}/edit">تعديل</a>
+              <form method="post" action="/admin/colleges/{{ c.id }}/toggle" style="display:inline">
+                <button class="btn btn-secondary" type="submit">تبديل الحالة</button>
+              </form>
+              <form method="post" action="/admin/colleges/{{ c.id }}/delete" style="display:inline" onsubmit="return confirm('سيتم حذف الكلية نهائيًا. متابعة؟')">
+                <button class="btn btn-secondary" type="submit">حذف</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="muted">لا توجد كليات مطابقة.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

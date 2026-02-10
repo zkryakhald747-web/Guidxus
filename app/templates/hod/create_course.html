@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/hod/">الرئيسية</a> › <span>{{ 'تعديل دورة' if edit_mode else 'إنشاء دورة' }}</span>
+{% endblock %}
+
+{% block content %}
+
+{% if request.query_params.get("created") and not edit_mode %}
+  <div class="alert alert-success prestige">تم إنشاء الدورة ونشرها بنجاح.</div>
+{% endif %}
+
+
+<style>
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .checkbox-grid .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    background: #fff;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .checkbox-grid .checkbox:hover {
+    border-color: #dcdcdc;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .checkbox-grid input[type="checkbox"] { transform: scale(1.05); }
+  .checkbox-grid span { line-height: 1.6; }
+
+  .dep-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0 4px;
+  }
+  .dep-toolbar input[type="search"]{
+    padding: 8px 10px;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    min-width: 260px;
+  }
+  .muted { color: #6b7280; font-size: .92rem; }
+</style>
+
+{# نحدد c = course عند التعديل، ونستعمل selected_department_ids لتعليم الأقسام المختارة #}
+{% set c = course if (edit_mode and course is defined) else None %}
+{% set mode_val = (c.mode if c else '') %}
+{% set selected_ids = (selected_department_ids if (edit_mode and selected_department_ids is defined) else []) %}
+
+<form class="form prestige-form" method="post" action="{{ '/hod/courses/' ~ c.id ~ '/edit' if c else '/hod/courses/new' }}">
+  
+  <section class="card card-prestige">
+    <div class="card-head">
+      <div class="card-icon">🎓</div>
+      <h3>معلومات الدورة</h3>
+    </div>
+    <div class="grid">
+      <label>اسم الدورة
+        <input type="text" name="title" required placeholder="مثال: مهارات السلامة في الورش" value="{{ c.title if c else '' }}">
+      </label>
+
+      <label>عدد الساعات
+        <input type="number" name="hours" step="0.5" min="0.5" required value="{{ c.hours if c else '' }}">
+      </label>
+
+      <label>آلية التنفيذ
+        <select name="mode" required>
+          <option value="in_person" {{ 'selected' if mode_val in ['in_person','حضوري','حضوري '] else '' }}>حضوري</option>
+          <option value="online"    {{ 'selected' if mode_val in ['online','remote','عن بُعد','عن بعد'] else '' }}>عن بُعد</option>
+        </select>
+      </label>
+
+      <label>تاريخ البداية
+        <input type="date" name="start_date" required
+               value="{{ (c.start_date.strftime('%Y-%m-%d') if c and c.start_date else '') }}">
+      </label>
+
+      <label>تاريخ النهاية
+        <input type="date" name="end_date" required
+               value="{{ (c.end_date.strftime('%Y-%m-%d') if c and c.end_date else '') }}">
+      </label>
+    </div>
+
+    <div class="grid">
+      <label>الجهة المنفذة
+        <input type="text" name="provider" placeholder="مثال: قسم المحركات والمركبات" value="{{ c.provider if c else '' }}">
+      </label>
+
+      
+      <label>اسم المنفِّذ
+        <input type="text" name="provider_name" placeholder="مثال: م. أحمد العلي" value="{{ c.provider_name if c else '' }}">
+      </label>
+
+      <label>وصف مختصر
+        <textarea name="description" rows="3" placeholder="نبذة عن محتوى الدورة وأهدافها">{{ c.description if c else '' }}</textarea>
+      </label>
+    </div>
+  </section>
+
+  
+  <section class="card card-prestige">
+    <div class="card-head">
+      <div class="card-icon">🗂️</div>
+      <h3>الاستهداف</h3>
+    </div>
+    <div class="muted">اختر أقسامًا مستهدفة (يمكن متعددة):</div>
+
+    <div class="dep-toolbar">
+      <input type="search" id="dep-filter" placeholder="ابحث عن قسم… (مثال: محاسبة, شبكات)">
+    </div>
+
+    <div class="checkbox-grid" id="dep-grid">
+      {% for dep in departments %}
+        <label class="checkbox">
+          <input type="checkbox" name="target_department_ids" value="{{ dep.id }}"
+                 {% if edit_mode and (dep.id in selected_ids) %}checked{% endif %}>
+          <span>{{ dep.name }}</span>
+        </label>
+      {% else %}
+        <div class="muted">لا توجد أقسام مسجلة بعد.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  
+  <section class="card card-prestige">
+    <div class="card-head">
+      <div class="card-icon">📝</div>
+      <h3>التسجيل والسعة</h3>
+    </div>
+    <div class="grid">
+      <label>السعة القصوى
+        <input type="number" name="capacity" min="1" required value="{{ c.capacity if c else 30 }}">
+      </label>
+
+      <label>سياسة التسجيل
+        {% set policy = c.registration_policy if c else 'open' %}
+        <div class="inline">
+          <label class="radio"><input type="radio" name="registration_policy" value="open"     {{ 'checked' if policy=='open' else '' }}> مفتوح مباشرة</label>
+          <label class="radio"><input type="radio" name="registration_policy" value="approval" {{ 'checked' if policy=='approval' else '' }}> يتطلب موافقة</label>
+          <label class="radio"><input type="radio" name="registration_policy" value="waitlist" {{ 'checked' if policy=='waitlist' else '' }}> قائمة انتظار تلقائية</label>
+        </div>
+      </label>
+
+      <label class="toggle">منع التكرار لنفس المتدرب
+        <input type="checkbox" name="prevent_duplicates" {{ 'checked' if (c and c.prevent_duplicates) or (not c) else '' }}>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </section>
+
+  
+  <section class="card card-prestige">
+    <div class="card-head">
+      <div class="card-icon">⚙️</div>
+      <h3>سياسات الحضور</h3>
+    </div>
+    <div class="grid">
+      {% set av = c.attendance_verification if c else 'paper' %}
+      <label>آلية التحقق
+        <select name="attendance_verification">
+          <option value="paper" {{ 'selected' if av=='paper' else '' }}>كشف ورقي</option>
+          <option value="qr"    {{ 'selected' if av=='qr' else '' }}>QR داخل القاعة (اختياري مستقبلاً)</option>
+        </select>
+      </label>
+
+      <label>شرط الإكمال لإصدار شهادة (%)
+        <input type="number" name="completion_threshold" min="0" max="100" value="{{ c.completion_threshold if c else 80 }}">
+      </label>
+    </div>
+  </section>
+
+  
+  <section class="card card-prestige">
+    <div class="card-head">
+      <div class="card-icon">📄</div>
+      <h3>المخرجات</h3>
+    </div>
+    <label class="checkbox">
+      <input type="checkbox" name="create_expected_roster" {{ 'checked' if (c and c.create_expected_roster) or (not c) else '' }}>
+      <span>تمكين إنشاء كشف متوقع للحضور قبل التنفيذ</span>
+    </label>
+    <label class="checkbox">
+      <input type="checkbox" name="auto_issue_certificates" {{ 'checked' if (c and c.auto_issue_certificates) or (not c) else '' }}>
+      <span>تفعيل إصدار الشهادات تلقائيًا عند الإكمال</span>
+    </label>
+  </section>
+
+  <div class="actions actions-prestige">
+    <button type="submit" class="btn btn-primary btn-prestige">{{ 'حفظ التعديلات' if c else 'نشر الدورة الآن' }}</button>
+    <a class="btn btn-secondary" href="/hod/">{{ 'رجوع' if c else 'إلغاء' }}</a>
+  </div>
+</form>
+
+
+<script>
+  (function () {
+    const input = document.getElementById('dep-filter');
+    const grid = document.getElementById('dep-grid');
+    if (!input || !grid) return;
+
+    input.addEventListener('input', function () {
+      const term = this.value.trim().toLowerCase();
+      const items = grid.querySelectorAll('label.checkbox');
+      items.forEach((el) => {
+        const text = (el.textContent || '').toLowerCase();
+        el.style.display = text.includes(term) ? '' : 'none';
+      });
+    });
+  })();
+</script>
+
+{% endblock %}

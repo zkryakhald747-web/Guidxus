@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> ‹ <span>إدارة المستخدمين</span>
+{% endblock %}
+
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head"><div class="card-icon">👥</div><h3>إدارة المستخدمين</h3></div>
+
+  <form method="get" action="/admin/users" class="form" style="margin-bottom:10px;">
+    <div class="grid" style="grid-template-columns:1fr 160px;">
+      <label>بحث
+        <input type="text" name="q" value="{{ q }}">
+      </label>
+      <div class="actions" style="align-items:end;">
+        <button class="btn btn-secondary">بحث</button>
+        <a class="btn btn-primary" href="/admin/users/new">+ مستخدم جديد</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الاسم الكامل</th>
+          <th>المستخدم</th>
+          <th>الدور</th>
+          <th>الكلية (HOD)</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ u.full_name }}</td>
+            <td>{{ u.username }}</td>
+            <td>
+              {% if u.is_admin %}
+                <span class="badge badge-live">سوبر أدمن</span>
+              {% elif u.is_college_admin %}
+                <span class="badge badge-info">أدمن كلية</span>
+              {% elif u.is_hod %}
+                <span class="badge badge-draft">رئيس قسم</span>
+              {% elif u.is_doc %}
+                <span class="badge badge-success">طبيب</span>
+              {% else %}
+                <span class="muted">مستخدم</span>
+              {% endif %}
+            </td>
+            <td>{{ u.hod_college or "-" }}</td>
+            <td>
+              {% if u.is_active %}<span class="status published">نشط</span>
+              {% else %}<span class="status closed">موقوف</span>{% endif %}
+            </td>
+            <td>
+              <a class="btn btn-xs" href="/admin/users/{{ u.id }}/edit">تعديل</a>
+              <form method="post" action="/admin/users/{{ u.id }}/toggle" style="display:inline;">
+                <button class="btn btn-xs" type="submit">
+                  {% if u.is_active %}إيقاف{% else %}تفعيل{% endif %}
+                </button>
+              </form>
+              <form method="post" action="/admin/users/{{ u.id }}/delete" style="display:inline;" onsubmit="return confirm('حذف المستخدم؟');">
+                <button class="btn btn-xs danger" type="submit">حذف</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">لا يوجد سجلات.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

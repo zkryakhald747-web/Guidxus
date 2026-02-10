@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: 'Tahoma', 'Arial', sans-serif;
+      direction: rtl;
+      font-size: 12pt;
+      color: #0f172a;
+    }
+    h1 {
+      text-align: left;
+      color: #0d3b55;
+      font-size: 16pt;
+      border-bottom: 2px solid #0d3b55;
+      padding-bottom: 4px;
+      margin-bottom: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header img {
+      height: 60px;
+    }
+    .meta {
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    .meta table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .meta td {
+      padding: 4px 6px;
+      font-size: 11pt;
+      vertical-align: top;
+    }
+    .meta .label {
+      color: #0d3b55;
+      font-weight: bold;
+      width: 120px;
+      white-space: nowrap;
+    }
+    table.roster {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table.roster th {
+      background: #e9f7f9;
+      color: #0d3b55;
+      padding: 6px;
+      border: 1px solid #c5d6de;
+      font-size: 11pt;
+    }
+    table.roster td {
+      border: 1px solid #c5d6de;
+      padding: 6px;
+      text-align: center;
+      font-size: 11pt;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 10pt;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>كشف حضور دورة تدريبية</h1>
+    {% if logo_path %}
+    <img src="{{ logo_path }}" alt="Logo">
+    {% endif %}
+  </div>
+
+  <div class="meta">
+    <table>
+      <tr>
+        <td class="label">اسم الدورة:</td>
+        <td>{{ course.title }}</td>
+        <td class="label">عدد الساعات:</td>
+        <td>{{ course.hours }}</td>
+      </tr>
+      <tr>
+        <td class="label">الفترة:</td>
+        <td>{{ course.start_date }} إلى {{ course.end_date }}</td>
+        {% if course.provider %}
+        <td class="label">الجهة المنفّذة:</td>
+        <td>{{ course.provider }}</td>
+        {% endif %}
+      </tr>
+      {% if course.provider_name %}
+      <tr>
+        <td class="label">اسم المنفّذ:</td>
+        <td colspan="3">{{ course.provider_name }}</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+
+  <table class="roster">
+    <thead>
+      <tr>
+        <th>م</th>
+        <th>اسم المتدرب</th>
+        <th>الرقم التدريبي</th>
+        <th>التخصص</th>
+        <th>توقيع المتدرب</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if rows %}
+        {% for i, r in enumerate(rows, start=1) %}
+        <tr>
+          <td>{{ i }}</td>
+          <td>{{ r.trainee_name }}</td>
+          <td>{{ r.trainee_no }}</td>
+          <td>{{ r.trainee_major or '' }}</td>
+          <td></td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5">لا يوجد مسجّلون</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    تم تصدير هذا النموذج من نظام Guidxus لإدارة خدمات المتدربين
+  </div>
+</body>
+</html>

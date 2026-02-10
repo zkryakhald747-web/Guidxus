@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+  <a href="/admin/">لوحة الأدمن</a> › <span>سجلات الدخول والنشاط</span>
+{% endblock %}
+
+{% block content %}
+<section class="card card-prestige">
+  <div class="card-head">
+    <div class="card-icon">📊</div>
+    <h3>سجلات الدخول والنشاط</h3>
+  </div>
+
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>اسم المستخدم</th>
+          <th>الاسم الكامل</th>
+          <th>آخر دخول</th>
+          <th>عدد مرات الدخول</th>
+          <th>عنوان IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if users_stats %}
+          {% for stat in users_stats %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ stat.username }}</td>
+            <td>{{ stat.full_name }}</td>
+            <td>
+              {% if stat.last_login %}
+                <small>{{ stat.last_login.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+              {% else %}
+                <span class="muted">لم يتم تسجيل دخول</span>
+              {% endif %}
+            </td>
+            <td>{{ stat.login_count }}</td>
+            <td>
+              {% if stat.last_ip %}
+                <small>{{ stat.last_ip }}</small>
+              {% else %}
+                <span class="muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6" class="muted">لا يوجد بيانات.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
